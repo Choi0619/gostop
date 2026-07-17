@@ -1,22 +1,25 @@
 import { useState, useEffect } from 'react';
 import HwatuCard from './components/HwatuCard';
+import GameScreen from './screens/GameScreen';
 import { CARDS } from './game/cards';
 import './App.css';
 
 export default function App() {
-  const [screen, setScreen] = useState('main'); // main | gallery
+  const [screen, setScreen] = useState('main'); // main | gallery | game
   const [showRoomModal, setShowRoomModal] = useState(false);
 
   if (screen === 'gallery') return <Gallery onBack={() => setScreen('main')} />;
+  if (screen === 'game') return <GameScreen onExit={() => setScreen('main')} />;
   return (
     <>
-      <MainScreen onGallery={() => setScreen('gallery')} onCreateRoom={() => setShowRoomModal(true)} />
+      <MainScreen onGallery={() => setScreen('gallery')} onCreateRoom={() => setShowRoomModal(true)}
+        onPlayAI={() => setScreen('game')} />
       {showRoomModal && <RoomModal onClose={() => setShowRoomModal(false)} />}
     </>
   );
 }
 
-function MainScreen({ onGallery, onCreateRoom }) {
+function MainScreen({ onGallery, onCreateRoom, onPlayAI }) {
   const fanCards = [CARDS[0], CARDS[8], CARDS[28], CARDS[40], CARDS[44]]; // 광 5장
   const [dealt, setDealt] = useState(false);
   useEffect(() => {
@@ -42,7 +45,7 @@ function MainScreen({ onGallery, onCreateRoom }) {
         <h1 className="title">고스톱</h1>
         <p className="subtitle">GO-STOP · 화투 온라인</p>
         <div className="menu">
-          <button className="menu-btn primary">🤖 AI 맞고 (준비중)</button>
+          <button className="menu-btn primary" onClick={onPlayAI}>🤖 AI 맞고</button>
           <button className="menu-btn" onClick={onCreateRoom}>👥 방 만들기</button>
           <button className="menu-btn" onClick={onGallery}>🎴 카드 도감</button>
           <button className="menu-btn" disabled>🔑 로그인 (준비중)</button>

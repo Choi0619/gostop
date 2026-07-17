@@ -218,6 +218,149 @@ body {
   text-align: center;
 }
 
+/* 게임 화면 */
+.game-screen {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 12px 20px;
+  gap: 8px;
+}
+
+.player-info {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 4px 8px;
+}
+
+.player-name { font-weight: 800; font-size: 16px; }
+.player-score { color: #ffd60a; font-weight: 700; }
+
+.turn-badge {
+  background: #ffd60a;
+  color: #14331a;
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 10px;
+  margin-left: 6px;
+  animation: pulse 1.2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.hand-row {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  flex-wrap: wrap;
+  min-height: 70px;
+}
+
+.my-hand { gap: 6px; min-height: 100px; }
+
+.floor-area {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  background: rgba(0, 0, 0, 0.22);
+  border-radius: 16px;
+  border: 1.5px solid rgba(255, 214, 10, 0.2);
+  padding: 16px 20px;
+  min-height: 130px;
+  flex: 1;
+}
+
+.deck-stack { position: relative; flex-shrink: 0; }
+
+.deck-count {
+  position: absolute;
+  bottom: -6px;
+  right: -6px;
+  background: #ffd60a;
+  color: #14331a;
+  font-size: 11px;
+  font-weight: 800;
+  padding: 2px 7px;
+  border-radius: 10px;
+}
+
+.floor-cards {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.captured-row {
+  display: flex;
+  gap: 14px;
+  min-height: 58px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.captured-group { display: flex; align-items: center; gap: 6px; }
+
+.captured-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.6);
+  writing-mode: vertical-rl;
+}
+
+.captured-cards { display: flex; }
+.captured-cards svg { margin-left: -14px; }
+.captured-cards svg:first-child { margin-left: 0; }
+
+.toast {
+  position: fixed;
+  top: 42%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(0, 0, 0, 0.85);
+  color: #ffd60a;
+  font-size: 42px;
+  font-weight: 900;
+  padding: 18px 44px;
+  border-radius: 20px;
+  border: 2px solid #ffd60a;
+  z-index: 200;
+  animation: toastPop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  pointer-events: none;
+}
+
+@keyframes toastPop {
+  from { transform: translate(-50%, -50%) scale(0.5); opacity: 0; }
+  to { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+}
+
+.go-stop-modal, .result-modal { text-align: center; }
+.go-stop-modal h2 { font-size: 36px; }
+.modal-actions.center { justify-content: center; }
+
+.result-detail { margin: 16px 0; }
+
+.result-line {
+  display: flex;
+  justify-content: space-between;
+  padding: 6px 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  font-size: 14px;
+}
+
+.result-line.total {
+  border-top: 2px solid #ffd60a;
+  border-bottom: none;
+  font-size: 17px;
+  color: #ffd60a;
+  margin-top: 6px;
+}
+
 /* 카드 도감 */
 .gallery-screen { padding: 24px; max-width: 940px; margin: 0 auto; }
 
