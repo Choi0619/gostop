@@ -361,6 +361,163 @@ body {
   margin-top: 6px;
 }
 
+/* 로그인 */
+.login-box { min-width: 360px; }
+.small-title { font-size: 44px; }
+
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 280px;
+}
+
+.login-form input, .friend-add input, .room-name-input {
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 2px solid rgba(255, 255, 255, 0.25);
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  font-size: 15px;
+  font-family: inherit;
+  width: 100%;
+}
+
+.login-form input::placeholder, .friend-add input::placeholder { color: rgba(255, 255, 255, 0.4); }
+
+.form-error { color: #ff8fab; font-size: 13px; text-align: center; }
+
+.link-btn {
+  margin-top: 12px;
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.6);
+  cursor: pointer;
+  font-size: 13px;
+  font-family: inherit;
+}
+
+.link-btn:hover { color: #ffd60a; }
+
+/* 로비 */
+.lobby-screen { max-width: 980px; margin: 0 auto; padding: 20px; min-height: 100vh; }
+
+.lobby-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.lobby-header h2 { color: #ffd60a; flex: 1; }
+.lobby-user { font-weight: 700; }
+.room-code { color: rgba(255, 255, 255, 0.5); font-size: 14px; margin-left: 8px; }
+
+.lobby-body { display: flex; gap: 20px; align-items: flex-start; }
+
+.room-list {
+  flex: 2;
+  background: rgba(0, 0, 0, 0.22);
+  border-radius: 16px;
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 300px;
+}
+
+.room-list h3, .friend-panel h3 { color: #ffd60a; font-size: 15px; margin-bottom: 6px; }
+
+.room-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.07);
+  border-radius: 10px;
+  padding: 10px 14px;
+}
+
+.room-meta { color: rgba(255, 255, 255, 0.55); font-size: 13px; }
+
+.friend-panel {
+  flex: 1;
+  background: rgba(0, 0, 0, 0.22);
+  border-radius: 16px;
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 300px;
+}
+
+.friend-add { display: flex; gap: 6px; }
+
+.friend-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 14px;
+  padding: 6px 4px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.empty-hint { color: rgba(255, 255, 255, 0.4); font-size: 13px; text-align: center; padding: 12px 0; }
+
+.invite-banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: rgba(255, 214, 10, 0.15);
+  border: 1.5px solid #ffd60a;
+  border-radius: 12px;
+  padding: 10px 16px;
+  margin-bottom: 14px;
+  animation: fadeIn 0.3s;
+}
+
+/* 채팅 */
+.chat-panel { max-height: 480px; }
+
+.chat-log {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 200px;
+  max-height: 340px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 4px;
+}
+
+.chat-line { font-size: 13px; line-height: 1.5; word-break: break-all; }
+.chat-line b { color: #ffd60a; margin-right: 6px; }
+
+/* 온라인 게임 레이아웃 */
+.game-screen.online { flex-direction: row; gap: 14px; }
+
+.online-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.opp-area { display: flex; gap: 24px; flex-wrap: wrap; }
+.opp-block { flex: 1; min-width: 220px; }
+
+.game-chat {
+  width: 220px;
+  background: rgba(0, 0, 0, 0.25);
+  border-radius: 14px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.game-chat .chat-log { min-height: 0; max-height: none; }
+
 /* 카드 도감 */
 .gallery-screen { padding: 24px; max-width: 940px; margin: 0 auto; }
 
