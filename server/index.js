@@ -157,6 +157,15 @@ io.use((socket, next) => {
 
 attachGameSockets(io);
 
+// ── 프로덕션: 클라이언트 빌드 서빙 ──
+import path from 'path';
+import { fileURLToPath } from 'url';
+const clientDist = path.join(path.dirname(fileURLToPath(import.meta.url)), '../client/dist');
+app.use(express.static(clientDist));
+app.get(/^(?!\/api|\/socket\.io).*/, (req, res) => {
+  res.sendFile(path.join(clientDist, 'index.html'), (err) => { if (err) res.status(404).end(); });
+});
+
 // async 라우트 오류로 프로세스가 죽지 않도록
 process.on('unhandledRejection', (e) => console.error('unhandledRejection:', e));
 
