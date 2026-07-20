@@ -15,7 +15,7 @@ function roomSummary(r) {
     code: r.code,
     name: r.name,
     playerCount: r.settings.playerCount,
-    players: r.players.map((p) => ({ nickname: p.nickname, ready: p.ready })),
+    players: r.players.map((p) => ({ nickname: p.nickname, ready: p.ready, avatar: p.avatar })),
     playing: !!r.state && r.state.phase !== 'finished',
   };
 }
@@ -62,8 +62,10 @@ function lobbyRooms() {
 }
 
 export function attachGameSockets(io) {
-  io.on('connection', (socket) => {
+  io.on('connection', async (socket) => {
     const user = socket.user; // { id, nickname }
+    const [dbUser] = await query('SELECT avatar FROM users WHERE id = $1', [user.id]).catch(() => [null]) || [null];
+    user.avatar = dbUser?.avatar || '🐱';
     online.set(user.id, socket);
     io.emit('online-users', [...online.keys()]);
 
@@ -77,7 +79,7 @@ export function attachGameSockets(io) {
         name: name || `${user.nickname}의 방`,
         host: user.id,
         settings: { playerCount: 2, rules: {}, ...settings },
-        players: [{ userId: user.id, nickname: user.nickname, ready: false, idx: 0 }],
+        players: [{ userId: user.id, nickname: user.nickname, avatar: user.avatar, ready: false, idx: 0 }],
         state: null,
         chat: [],
       };
@@ -98,7 +100,7 @@ export function attachGameSockets(io) {
       }
       if (room.players.length >= room.settings.playerCount) return cb?.({ error: '방이 가득 찼습니다' });
       if (room.state) return cb?.({ error: '게임이 진행 중입니다' });
-      room.players.push({ userId: user.id, nickname: user.nickname, ready: false, idx: room.players.length });
+      room.players.push({ userId: user.id, nickname: user.nickname, avatar: user.avatar, ready: false, idx: room.players.length });
       socket.join(code);
       socket.roomCode = code;
       cb?.({ ok: true, room: roomSummary(room) });
@@ -117,7 +119,7 @@ export function attachGameSockets(io) {
     socket.on('chat-message', ({ text }) => {
       const room = rooms.get(socket.roomCode);
       if (!room || !text) return;
-      const msg = { nickname: user.nickname, text: String(text).slice(0, 200), ts: Date.now() };
+      const msg = { nickname: user.nickname, avatar: user.avatar, text: String(text).slice(0, 200), ts: Date.now() };
       room.chat.push(msg);
       io.to(room.code).emit('chat-message', msg);
     });

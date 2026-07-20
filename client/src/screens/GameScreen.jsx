@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import HwatuCard from '../components/HwatuCard';
 import { createGame, playCard, chooseFloorMatch, declareGo, declareStop, playBomb, declareShake, legalActions, scoreOf } from '../game/engine';
 import { chooseAction } from '../game/ai';
+import { getUser } from '../api';
 
 const EVENT_LABEL = {
   ppeok: '뻑!', jjok: '쪽!', ttadak: '따닥!', sseul: '쓸!', bomb: '폭탄!',
@@ -126,7 +127,7 @@ export default function GameScreen({ onExit }) {
           )}
         </div>
         <div className="player-info">
-          <span className="player-name">😎 나 {myTurn && <b className="turn-badge">내 차례</b>}</span>
+          <span className="player-name"><span className='avatar-inline'>{getUser()?.avatar || '😎'}</span> 나 {myTurn && <b className="turn-badge">내 차례</b>}</span>
           <span className="player-score">{myScore}점 {me.goCount > 0 && `· ${me.goCount}고`}</span>
           {bombAct && <button className="menu-btn small primary" onClick={() => { playBomb(s, ME, bombAct.month); flushEvents(); rerender(); }}>💣 폭탄 ({bombAct.month}월)</button>}
           {shakeAct && <button className="menu-btn small" onClick={() => { declareShake(s, ME, shakeAct.month); flushEvents(); rerender(); }}>👋 흔들기 ({shakeAct.month}월)</button>}

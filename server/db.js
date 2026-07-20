@@ -40,6 +40,8 @@ export async function initDb() {
     created_at TEXT DEFAULT (datetime('now'))
   )`.replace("(datetime('now'))", process.env.DATABASE_URL ? 'now()::text' : "(datetime('now'))"));
 
+  try { await query(`ALTER TABLE users ADD COLUMN avatar TEXT DEFAULT '🐱'`); } catch { /* 이미 있음 */ }
+
   await query(`CREATE TABLE IF NOT EXISTS friends (
     id SERIAL PRIMARY KEY,
     user_id INTEGER NOT NULL,

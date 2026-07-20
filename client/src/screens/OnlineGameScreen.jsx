@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import HwatuCard from '../components/HwatuCard';
 import { getSocket } from '../socket';
+import { getUser } from '../api';
 
 const EVENT_LABEL = {
   ppeok: '뻑!', jjok: '쪽!', ttadak: '따닥!', sseul: '쓸!', bomb: '폭탄!',
@@ -64,7 +65,7 @@ export default function OnlineGameScreen({ room, onLeave, onExit }) {
           {opponents.map((p) => (
             <div key={p.i} className="opp-block">
               <div className="player-info">
-                <span className="player-name">{p.folded ? '💤' : '🀄'} {p.nickname} {p.folded && '(광팜)'}</span>
+                <span className="player-name"><span className='avatar-inline'>{room.players[p.i]?.avatar || '🀄'}</span> {p.nickname} {p.folded && '(광팜)'}</span>
                 <span className="player-score">{p.score}점 {p.goCount > 0 && `· ${p.goCount}고`}</span>
                 {st.phase === 'play' && st.turn === p.i && <b className="turn-badge">차례</b>}
               </div>
@@ -108,7 +109,7 @@ export default function OnlineGameScreen({ room, onLeave, onExit }) {
             )}
           </div>
           <div className="player-info">
-            <span className="player-name">😎 나 {myTurn && <b className="turn-badge">내 차례</b>}</span>
+            <span className="player-name"><span className='avatar-inline'>{getUser()?.avatar || '😎'}</span> 나 {myTurn && <b className="turn-badge">내 차례</b>}</span>
             <span className="player-score">{st.players[myIdx]?.score}점 {me.goCount > 0 && `· ${me.goCount}고`}</span>
             {myTurn && bombMonth && <button className="menu-btn small primary" onClick={() => act({ action: 'bomb', month: +bombMonth })}>💣 폭탄 ({bombMonth}월)</button>}
             {myTurn && shakeMonth && <button className="menu-btn small" onClick={() => act({ action: 'shake', month: +shakeMonth })}>👋 흔들기 ({shakeMonth}월)</button>}
@@ -120,7 +121,7 @@ export default function OnlineGameScreen({ room, onLeave, onExit }) {
       {/* 채팅 사이드 */}
       <div className="game-chat">
         <div className="chat-log" ref={chatRef}>
-          {chat.map((m, i) => <div key={i} className="chat-line"><b>{m.nickname}</b> {m.text}</div>)}
+          {chat.map((m, i) => <div key={i} className="chat-line"><b>{m.avatar} {m.nickname}</b> {m.text}</div>)}
         </div>
         <form className="friend-add" onSubmit={(e) => {
           e.preventDefault();

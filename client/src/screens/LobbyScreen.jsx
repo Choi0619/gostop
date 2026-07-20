@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback, useRef } from 'react';
 import { api, getUser, clearAuth } from '../api';
 import { getSocket, closeSocket } from '../socket';
 import OnlineGameScreen from './OnlineGameScreen';
+import AvatarPicker from '../components/AvatarPicker';
 
 // 로비: 방 목록 + 친구 + 방 내부(대기/채팅) + 온라인 게임
 export default function LobbyScreen({ onExit }) {
@@ -15,6 +16,8 @@ export default function LobbyScreen({ onExit }) {
   const [invite, setInvite] = useState(null);
   const [error, setError] = useState('');
   const [showCreate, setShowCreate] = useState(false);
+  const [showAvatar, setShowAvatar] = useState(false);
+  const [me, setMe] = useState(user);
 
   const loadFriends = useCallback(() => {
     api('/api/friends').then(setFriends).catch(() => {});
@@ -29,6 +32,7 @@ export default function LobbyScreen({ onExit }) {
     s.on('game-started', () => setPlaying(true));
     s.on('invited', setInvite);
     loadFriends();
+    api('/api/me').then(setMe).catch(() => {});
     return () => {
       s.off('rooms-updated'); s.off('room-updated'); s.off('online-users');
       s.off('game-started'); s.off('invited');
@@ -66,7 +70,8 @@ export default function LobbyScreen({ onExit }) {
     <div className="lobby-screen">
       <div className="lobby-header">
         <h2>🎴 로비</h2>
-        <span className="lobby-user">😎 {user?.nickname}</span>
+        <button className="avatar-medallion" onClick={() => setShowAvatar(true)} title="캐릭터 변경">{me?.avatar || '🐱'}</button>
+        <span className="lobby-user">{me?.nickname} <small>{me?.wins || 0}승 {me?.losses || 0}패 · 💰{(me?.money ?? 0).toLocaleString()}</small></span>
         <button className="menu-btn small" onClick={() => setShowCreate(true)}>+ 방 만들기</button>
         <button className="menu-btn small" onClick={() => { closeSocket(); clearAuth(); onExit(); }}>로그아웃</button>
         <button className="menu-btn small" onClick={onExit}>← 메인</button>
@@ -109,7 +114,7 @@ export default function LobbyScreen({ onExit }) {
           {friends.map((f) => (
             <div key={f.id} className="friend-item">
               <span className={onlineIds.length && f.online !== false ? '' : ''}>
-                {f.nickname} <small>({f.wins}승 {f.losses}패)</small>
+                {f.avatar || '🐱'} {f.nickname} <small>({f.wins}승 {f.losses}패)</small>
               </span>
               {f.status === 'pending' && f.incoming && (
                 <span>
@@ -125,6 +130,7 @@ export default function LobbyScreen({ onExit }) {
       </div>
 
       {showCreate && <CreateRoomModal onCreate={createRoom} onClose={() => setShowCreate(false)} />}
+      {showAvatar && <AvatarPicker wins={me?.wins || 0} onClose={() => setShowAvatar(false)} onChange={(a) => setMe((m) => ({ ...m, avatar: a }))} />}
     </div>
   );
 }
@@ -159,7 +165,7 @@ function RoomWait({ room, friends, onlineIds, onLeave }) {
           <h3>플레이어 ({room.players.length}/{room.playerCount})</h3>
           {room.players.map((p) => (
             <div key={p.nickname} className="room-item">
-              <span>{p.nickname} {p.nickname === user?.nickname && '(나)'}</span>
+              <span><span className='avatar-inline'>{p.avatar || '🐱'}</span> {p.nickname} {p.nickname === user?.nickname && '(나)'}</span>
               <span>{p.ready ? '✅ 준비완료' : '⏳ 대기중'}</span>
             </div>
           ))}
@@ -186,7 +192,7 @@ function RoomWait({ room, friends, onlineIds, onLeave }) {
           <h3>💬 채팅</h3>
           <div className="chat-log" ref={chatRef}>
             {chat.map((m, i) => (
-              <div key={i} className="chat-line"><b>{m.nickname}</b> {m.text}</div>
+              <div key={i} className="chat-line"><b>{m.avatar} {m.nickname}</b> {m.text}</div>
             ))}
           </div>
           <form className="friend-add" onSubmit={(e) => {

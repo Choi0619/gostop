@@ -36,7 +36,7 @@ app.post('/api/register', async (req, res) => {
     const hash = bcrypt.hashSync(password, 10);
     await query('INSERT INTO users (username, nickname, password_hash) VALUES ($1, $2, $3)', [username, nickname, hash]);
     const [u] = await query('SELECT * FROM users WHERE username = $1', [username]);
-    res.json({ token: sign(u), user: { id: u.id, nickname: u.nickname, money: u.money } });
+    res.json({ token: sign(u), user: { id: u.id, nickname: u.nickname, money: u.money, avatar: u.avatar } });
   } catch (e) {
     res.status(400).json({ error: '이미 사용 중인 아이디 또는 닉네임입니다' });
   }
@@ -48,19 +48,33 @@ app.post('/api/login', async (req, res) => {
   if (!u || !bcrypt.compareSync(password || '', u.password_hash)) {
     return res.status(401).json({ error: '아이디 또는 비밀번호가 틀립니다' });
   }
-  res.json({ token: sign(u), user: { id: u.id, nickname: u.nickname, money: u.money, wins: u.wins, losses: u.losses } });
+  res.json({ token: sign(u), user: { id: u.id, nickname: u.nickname, money: u.money, wins: u.wins, losses: u.losses, avatar: u.avatar } });
 });
 
 app.get('/api/me', authMiddleware, async (req, res) => {
-  const [u] = await query('SELECT id, nickname, money, wins, losses FROM users WHERE id = $1', [req.user.id]);
+  const [u] = await query('SELECT id, nickname, money, wins, losses, avatar FROM users WHERE id = $1', [req.user.id]);
   res.json(u);
+});
+
+// 캐릭터: 승수로 잠금해제
+export const AVATAR_UNLOCKS = { '🐢': 3, '🦅': 7, '🐗': 12, '🦌': 20, '🐦': 30, '🦄': 50 };
+const AVATARS = ['🐱', '🐶', '🐰', '🦊', '🐯', '🐻', '🐸', '🐢', '🦅', '🐗', '🦌', '🐦', '🦄'];
+
+app.post('/api/avatar', authMiddleware, async (req, res) => {
+  const { avatar } = req.body;
+  if (!AVATARS.includes(avatar)) return res.status(400).json({ error: '없는 캐릭터입니다' });
+  const [u] = await query('SELECT wins FROM users WHERE id = $1', [req.user.id]);
+  const need = AVATAR_UNLOCKS[avatar] || 0;
+  if ((u?.wins || 0) < need) return res.status(400).json({ error: `${need}승 달성 시 해금됩니다` });
+  await query('UPDATE users SET avatar = $1 WHERE id = $2', [avatar, req.user.id]);
+  res.json({ ok: true, avatar });
 });
 
 // ── 친구 ──
 app.get('/api/friends', authMiddleware, async (req, res) => {
   const rows = await query(
     `SELECT f.id, f.status, f.user_id, f.friend_id,
-            u.nickname, u.wins, u.losses
+            u.nickname, u.wins, u.losses, u.avatar
      FROM friends f
      JOIN users u ON u.id = CASE WHEN f.user_id = $1 THEN f.friend_id ELSE f.user_id END
      WHERE f.user_id = $1 OR f.friend_id = $1`,
@@ -69,6 +83,7 @@ app.get('/api/friends', authMiddleware, async (req, res) => {
   res.json(rows.map((r) => ({
     id: r.id,
     nickname: r.nickname,
+    avatar: r.avatar,
     wins: r.wins,
     losses: r.losses,
     status: r.status,
