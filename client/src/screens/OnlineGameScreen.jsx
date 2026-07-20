@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import HwatuCard from '../components/HwatuCard';
 import { getSocket } from '../socket';
 import { getUser } from '../api';
+import ReactionBar from '../components/ReactionBar';
 
 const EVENT_LABEL = {
   ppeok: '뻑!', jjok: '쪽!', ttadak: '따닥!', sseul: '쓸!', bomb: '폭탄!',
@@ -131,6 +132,8 @@ export default function OnlineGameScreen({ room, onLeave, onExit }) {
           <button className="menu-btn small">↵</button>
         </form>
       </div>
+
+      <ReactionBar />
 
       {toast && <div className="toast">{toast}</div>}
 

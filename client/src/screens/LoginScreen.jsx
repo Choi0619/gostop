@@ -3,7 +3,7 @@ import { api, saveAuth } from '../api';
 
 export default function LoginScreen({ onLogin, onBack }) {
   const [mode, setMode] = useState('login'); // login | register
-  const [form, setForm] = useState({ username: '', nickname: '', password: '' });
+  const [form, setForm] = useState({ email: '', nickname: '', password: '' });
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
 
@@ -30,7 +30,7 @@ export default function LoginScreen({ onLogin, onBack }) {
         <h1 className="title small-title">고스톱</h1>
         <p className="subtitle">{mode === 'login' ? '로그인' : '회원가입'}</p>
         <form className="login-form" onSubmit={submit}>
-          <input placeholder="아이디" value={form.username} onChange={set('username')} autoFocus />
+          <input type="email" placeholder="이메일" value={form.email} onChange={set('email')} autoFocus />
           {mode === 'register' && (
             <input placeholder="닉네임 (게임에서 표시)" value={form.nickname} onChange={set('nickname')} />
           )}

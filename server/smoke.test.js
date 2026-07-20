@@ -12,8 +12,8 @@ async function api(path, body, token) {
   return res.json();
 }
 
-const t1 = (await api('/api/login', { username: 'test1', password: '1234' })).token;
-const t2 = (await api('/api/login', { username: 'test2', password: '1234' })).token;
+const t1 = (await api('/api/login', { email: 'test1', password: '1234' })).token;
+const t2 = (await api('/api/login', { email: 'test2', password: '1234' })).token;
 if (!t1 || !t2) { console.error('로그인 실패'); process.exit(1); }
 
 const s1 = io(BASE, { auth: { token: t1 } });

@@ -124,6 +124,26 @@ export function attachGameSockets(io) {
       io.to(room.code).emit('chat-message', msg);
     });
 
+    // 친구 1:1 DM
+    socket.on('dm', async ({ toUserId, text }, cb) => {
+      text = String(text || '').slice(0, 300).trim();
+      if (!text) return;
+      const msg = { from_id: user.id, to_id: toUserId, text, ts: Date.now(), fromNickname: user.nickname, fromAvatar: user.avatar };
+      try { await query('INSERT INTO dms (from_id, to_id, text, ts) VALUES ($1, $2, $3, $4)', [user.id, toUserId, text, msg.ts]); }
+      catch (e) { console.error('dm 저장 실패', e); }
+      online.get(toUserId)?.emit('dm', msg);
+      cb?.({ ok: true, msg });
+    });
+
+    // 인게임 이모티콘 리액션
+    socket.on('reaction', ({ emoji }) => {
+      const room = rooms.get(socket.roomCode);
+      if (!room) return;
+      const ALLOWED = ['👍', '😂', '😡', '🥳', '😱', '💢', '🙏', '😴'];
+      if (!ALLOWED.includes(emoji)) return;
+      io.to(room.code).emit('reaction', { nickname: user.nickname, avatar: user.avatar, emoji, ts: Date.now() });
+    });
+
     socket.on('set-ready', ({ ready }) => {
       const room = rooms.get(socket.roomCode);
       if (!room) return;

@@ -41,6 +41,16 @@ export async function initDb() {
   )`.replace("(datetime('now'))", process.env.DATABASE_URL ? 'now()::text' : "(datetime('now'))"));
 
   try { await query(`ALTER TABLE users ADD COLUMN avatar TEXT DEFAULT '🐱'`); } catch { /* 이미 있음 */ }
+  try { await query(`ALTER TABLE users ADD COLUMN email TEXT`); } catch { /* 이미 있음 */ }
+
+  await query(`CREATE TABLE IF NOT EXISTS dms (
+    id SERIAL PRIMARY KEY,
+    from_id INTEGER NOT NULL,
+    to_id INTEGER NOT NULL,
+    text TEXT NOT NULL,
+    ts INTEGER NOT NULL,
+    read INTEGER DEFAULT 0
+  )`);
 
   await query(`CREATE TABLE IF NOT EXISTS friends (
     id SERIAL PRIMARY KEY,

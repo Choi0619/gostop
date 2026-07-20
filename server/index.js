@@ -29,13 +29,16 @@ function authMiddleware(req, res, next) {
 
 // ── 인증 ──
 app.post('/api/register', async (req, res) => {
-  const { username, nickname, password } = req.body;
-  if (!username || !nickname || !password) return res.status(400).json({ error: '모든 항목을 입력하세요' });
+  const { email, nickname, password } = req.body;
+  if (!email || !nickname || !password) return res.status(400).json({ error: '모든 항목을 입력하세요' });
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return res.status(400).json({ error: '올바른 이메일을 입력하세요' });
   if (password.length < 4) return res.status(400).json({ error: '비밀번호는 4자 이상' });
+  const [dup] = await query('SELECT id FROM users WHERE email = $1 OR nickname = $2', [email, nickname]);
+  if (dup) return res.status(400).json({ error: '이미 사용 중인 이메일 또는 닉네임입니다' });
   try {
     const hash = bcrypt.hashSync(password, 10);
-    await query('INSERT INTO users (username, nickname, password_hash) VALUES ($1, $2, $3)', [username, nickname, hash]);
-    const [u] = await query('SELECT * FROM users WHERE username = $1', [username]);
+    await query('INSERT INTO users (username, email, nickname, password_hash) VALUES ($1, $1, $2, $3)', [email, nickname, hash]);
+    const [u] = await query('SELECT * FROM users WHERE email = $1', [email]);
     res.json({ token: sign(u), user: { id: u.id, nickname: u.nickname, money: u.money, avatar: u.avatar } });
   } catch (e) {
     res.status(400).json({ error: '이미 사용 중인 아이디 또는 닉네임입니다' });
@@ -43,10 +46,10 @@ app.post('/api/register', async (req, res) => {
 });
 
 app.post('/api/login', async (req, res) => {
-  const { username, password } = req.body;
-  const [u] = await query('SELECT * FROM users WHERE username = $1', [username]);
+  const { email, password } = req.body;
+  const [u] = await query('SELECT * FROM users WHERE email = $1 OR username = $1', [email]);
   if (!u || !bcrypt.compareSync(password || '', u.password_hash)) {
-    return res.status(401).json({ error: '아이디 또는 비밀번호가 틀립니다' });
+    return res.status(401).json({ error: '이메일 또는 비밀번호가 틀립니다' });
   }
   res.json({ token: sign(u), user: { id: u.id, nickname: u.nickname, money: u.money, wins: u.wins, losses: u.losses, avatar: u.avatar } });
 });
@@ -70,11 +73,39 @@ app.post('/api/avatar', authMiddleware, async (req, res) => {
   res.json({ ok: true, avatar });
 });
 
+// 닉네임 변경 (새 토큰 발급)
+app.post('/api/nickname', authMiddleware, async (req, res) => {
+  const nickname = (req.body.nickname || '').trim();
+  if (nickname.length < 2 || nickname.length > 12) return res.status(400).json({ error: '닉네임은 2~12자' });
+  const [dup] = await query('SELECT id FROM users WHERE nickname = $1 AND id != $2', [nickname, req.user.id]);
+  if (dup) return res.status(400).json({ error: '이미 사용 중인 닉네임입니다' });
+  await query('UPDATE users SET nickname = $1 WHERE id = $2', [nickname, req.user.id]);
+  const [u] = await query('SELECT * FROM users WHERE id = $1', [req.user.id]);
+  res.json({ ok: true, token: sign(u), nickname });
+});
+
+// ── DM (친구 1:1 채팅) ──
+app.get('/api/dms/:userId', authMiddleware, async (req, res) => {
+  const other = +req.params.userId;
+  const rows = await query(
+    `SELECT * FROM dms WHERE (from_id = $1 AND to_id = $2) OR (from_id = $2 AND to_id = $1) ORDER BY ts DESC LIMIT 50`,
+    [req.user.id, other]
+  );
+  await query('UPDATE dms SET read = 1 WHERE from_id = $1 AND to_id = $2', [other, req.user.id]);
+  res.json(rows.reverse());
+});
+
+app.get('/api/dms-unread', authMiddleware, async (req, res) => {
+  const rows = await query('SELECT from_id, COUNT(*) as cnt FROM dms WHERE to_id = $1 AND read = 0 GROUP BY from_id', [req.user.id]);
+  res.json(rows);
+});
+
 // ── 친구 ──
 app.get('/api/friends', authMiddleware, async (req, res) => {
   const rows = await query(
     `SELECT f.id, f.status, f.user_id, f.friend_id,
             u.nickname, u.wins, u.losses, u.avatar
+     , u.id AS other_id
      FROM friends f
      JOIN users u ON u.id = CASE WHEN f.user_id = $1 THEN f.friend_id ELSE f.user_id END
      WHERE f.user_id = $1 OR f.friend_id = $1`,
@@ -82,6 +113,7 @@ app.get('/api/friends', authMiddleware, async (req, res) => {
   );
   res.json(rows.map((r) => ({
     id: r.id,
+    userId: r.other_id,
     nickname: r.nickname,
     avatar: r.avatar,
     wins: r.wins,

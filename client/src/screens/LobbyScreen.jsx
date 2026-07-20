@@ -3,6 +3,8 @@ import { api, getUser, clearAuth } from '../api';
 import { getSocket, closeSocket } from '../socket';
 import OnlineGameScreen from './OnlineGameScreen';
 import AvatarPicker from '../components/AvatarPicker';
+import DMChat from '../components/DMChat';
+import { saveAuth, getToken } from '../api';
 
 // 로비: 방 목록 + 친구 + 방 내부(대기/채팅) + 온라인 게임
 export default function LobbyScreen({ onExit }) {
@@ -17,6 +19,8 @@ export default function LobbyScreen({ onExit }) {
   const [error, setError] = useState('');
   const [showCreate, setShowCreate] = useState(false);
   const [showAvatar, setShowAvatar] = useState(false);
+  const [dmFriend, setDmFriend] = useState(null);
+  const [unread, setUnread] = useState({});
   const [me, setMe] = useState(user);
 
   const loadFriends = useCallback(() => {
@@ -33,9 +37,12 @@ export default function LobbyScreen({ onExit }) {
     s.on('invited', setInvite);
     loadFriends();
     api('/api/me').then(setMe).catch(() => {});
+    api('/api/dms-unread').then((rows) => setUnread(Object.fromEntries(rows.map((r) => [r.from_id, r.cnt])))).catch(() => {});
+    const onDm = (m) => setUnread((u) => ({ ...u, [m.from_id]: (u[m.from_id] || 0) + 1 }));
+    s.on('dm', onDm);
     return () => {
       s.off('rooms-updated'); s.off('room-updated'); s.off('online-users');
-      s.off('game-started'); s.off('invited');
+      s.off('game-started'); s.off('invited'); s.off('dm');
     };
   }, [loadFriends]);
 
@@ -71,7 +78,19 @@ export default function LobbyScreen({ onExit }) {
       <div className="lobby-header">
         <h2>🎴 로비</h2>
         <button className="avatar-medallion" onClick={() => setShowAvatar(true)} title="캐릭터 변경">{me?.avatar || '🐱'}</button>
-        <span className="lobby-user">{me?.nickname} <small>{me?.wins || 0}승 {me?.losses || 0}패 · 💰{(me?.money ?? 0).toLocaleString()}</small></span>
+        <span className="lobby-user">
+          <button className="nick-edit" title="닉네임 변경" onClick={async () => {
+            const nick = prompt('새 닉네임 (2~12자)', me?.nickname);
+            if (!nick || nick === me?.nickname) return;
+            try {
+              const r = await api('/api/nickname', { method: 'POST', body: { nickname: nick } });
+              saveAuth(r.token, { ...user, nickname: r.nickname });
+              setMe((m) => ({ ...m, nickname: r.nickname }));
+              closeSocket(); getSocket();
+            } catch (e) { setError(e.message); }
+          }}>{me?.nickname} ✏️</button>
+          <small>{me?.wins || 0}승 {me?.losses || 0}패 · 💰{(me?.money ?? 0).toLocaleString()}</small>
+        </span>
         <button className="menu-btn small" onClick={() => setShowCreate(true)}>+ 방 만들기</button>
         <button className="menu-btn small" onClick={() => { closeSocket(); clearAuth(); onExit(); }}>로그아웃</button>
         <button className="menu-btn small" onClick={onExit}>← 메인</button>
@@ -123,6 +142,11 @@ export default function LobbyScreen({ onExit }) {
                 </span>
               )}
               {f.status === 'pending' && !f.incoming && <small>요청중...</small>}
+              {f.status === 'accepted' && (
+                <button className="menu-btn small" onClick={() => { setDmFriend(f); setUnread((u) => ({ ...u, [f.userId]: 0 })); }}>
+                  💬{unread[f.userId] > 0 && <span className="badge">{unread[f.userId]}</span>}
+                </button>
+              )}
             </div>
           ))}
           {friends.length === 0 && <p className="empty-hint">친구를 추가해보세요</p>}
@@ -131,6 +155,7 @@ export default function LobbyScreen({ onExit }) {
 
       {showCreate && <CreateRoomModal onCreate={createRoom} onClose={() => setShowCreate(false)} />}
       {showAvatar && <AvatarPicker wins={me?.wins || 0} onClose={() => setShowAvatar(false)} onChange={(a) => setMe((m) => ({ ...m, avatar: a }))} />}
+      {dmFriend && <DMChat friend={dmFriend} onClose={() => setDmFriend(null)} />}
     </div>
   );
 }
@@ -181,7 +206,7 @@ function RoomWait({ room, friends, onlineIds, onLeave }) {
               {acceptedFriends.map((f) => (
                 <div key={f.id} className="room-item">
                   <span>{f.nickname}</span>
-                  <button className="menu-btn small" onClick={() => getSocket().emit('invite-friend', { friendId: f.friendUserId ?? f.id })}>초대</button>
+                  <button className="menu-btn small" onClick={() => getSocket().emit('invite-friend', { friendId: f.userId })}>초대</button>
                 </div>
               ))}
             </>
