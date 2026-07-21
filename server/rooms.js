@@ -4,6 +4,7 @@ import {
   playBomb, declareShake, decideGwangSale, legalActions, scoreOf,
 } from '../client/src/game/engine.js';
 import { query } from './db.js';
+import { rpDelta } from '../client/src/game/rank.js';
 
 const rooms = new Map();       // code -> room
 const online = new Map();      // userId -> socket
@@ -223,17 +224,33 @@ export function attachGameSockets(io) {
 
 async function finishGame(io, room) {
   const r = room.state.result;
-  if (r?.type === 'win' || r?.type === 'chongtong') {
-    const winner = room.players.find((p) => p.idx === r.winner);
-    if (winner) {
-      try {
-        await query('UPDATE users SET wins = wins + 1 WHERE id = $1', [winner.userId]);
-        for (const p of room.players) {
-          if (p.userId !== winner.userId) await query('UPDATE users SET losses = losses + 1 WHERE id = $1', [p.userId]);
-        }
-        await query('INSERT INTO game_results (room_code, winner_id, detail) VALUES ($1, $2, $3)',
-          [room.code, winner.userId, JSON.stringify(r)]);
-      } catch (e) { console.error('결과 저장 실패', e); }
+  if (r?.type !== 'win' && r?.type !== 'chongtong') return;
+  const winner = room.players.find((p) => p.idx === r.winner);
+  if (!winner) return;
+  const ts = Date.now();
+  const nP = room.players.length;
+  const winScore = r.score || 0;
+  const rpChanges = {}; // userId -> delta
+
+  try {
+    for (const p of room.players) {
+      const won = p.userId === winner.userId;
+      const delta = rpDelta({ won, score: won ? winScore : 0 });
+      rpChanges[p.userId] = delta;
+      const oppNames = room.players.filter((x) => x.userId !== p.userId).map((x) => x.nickname).join(', ');
+
+      if (won) await query('UPDATE users SET wins = wins + 1, rp = MAX(0, rp + $1) WHERE id = $2', [delta, p.userId]);
+      else await query('UPDATE users SET losses = losses + 1, rp = MAX(0, rp + $1) WHERE id = $2', [delta, p.userId]);
+
+      await query('INSERT INTO match_history (user_id, won, score, rp_delta, players, opponents, ts) VALUES ($1, $2, $3, $4, $5, $6, $7)',
+        [p.userId, won ? 1 : 0, won ? winScore : 0, delta, nP, oppNames, ts]);
     }
+    await query('INSERT INTO game_results (room_code, winner_id, detail) VALUES ($1, $2, $3)',
+      [room.code, winner.userId, JSON.stringify(r)]);
+  } catch (e) { console.error('결과 저장 실패', e); }
+
+  // 각 플레이어에게 자기 RP 증감 알림
+  for (const p of room.players) {
+    online.get(p.userId)?.emit('rp-update', { delta: rpChanges[p.userId] });
   }
 }

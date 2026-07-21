@@ -868,6 +868,102 @@ button { font-family: inherit; }
   pointer-events: none;
 }
 
+/* ── 랭크 뱃지 ── */
+.rank-badge { display: inline-flex; align-items: center; gap: 5px; }
+.rank-emoji { font-size: 16px; }
+.rank-text { display: flex; flex-direction: column; line-height: 1.1; }
+.rank-text b { font-size: 13px; }
+.rank-text small { font-size: 10px; color: rgba(255, 255, 255, 0.6); }
+.rank-sm .rank-emoji { font-size: 15px; }
+.rank-lg .rank-emoji { font-size: 40px; }
+.rank-lg .rank-text b { font-size: 20px; }
+
+.tier-bar-wrap { display: block; margin-top: 6px; }
+.tier-bar {
+  display: block; height: 8px; border-radius: 5px;
+  background: rgba(255, 255, 255, 0.14); overflow: hidden;
+}
+.tier-bar-fill { display: block; height: 100%; background: linear-gradient(90deg, #b3001b, #ffd60a); border-radius: 5px; transition: width 0.5s; }
+.tier-remain { display: block; font-size: 10px; color: rgba(255, 255, 255, 0.55); margin-top: 3px; }
+
+/* ── 랭킹 순위표 ── */
+.leaderboard-modal { width: 440px; }
+.lb-list { display: flex; flex-direction: column; gap: 4px; max-height: 52vh; overflow-y: auto; margin: 8px 0; }
+.lb-row {
+  display: grid;
+  grid-template-columns: 32px 28px 1fr auto auto;
+  align-items: center; gap: 8px;
+  padding: 8px 10px; border-radius: 10px;
+  background: rgba(255, 255, 255, 0.06); cursor: pointer; font-size: 14px;
+  transition: background 0.15s;
+}
+.lb-row:hover { background: rgba(255, 255, 255, 0.13); }
+.lb-row.lb-me { border: 1.5px solid #ffd60a; background: rgba(255, 214, 10, 0.12); }
+.lb-row.lb-top { background: rgba(255, 214, 10, 0.08); }
+.lb-rank { text-align: center; font-weight: 800; font-size: 15px; }
+.lb-avatar { font-size: 18px; text-align: center; }
+.lb-name { font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lb-tier { font-size: 12px; font-weight: 700; }
+.lb-rp { font-size: 12px; color: #ffd60a; font-weight: 800; }
+.lb-myrank { text-align: center; padding: 8px; background: rgba(255, 214, 10, 0.1); border-radius: 10px; font-size: 14px; }
+.lb-myrank b { color: #ffd60a; }
+
+/* ── 프로필 ── */
+.profile-modal { width: 400px; }
+.profile-head { display: flex; align-items: center; gap: 14px; margin-bottom: 14px; }
+.profile-avatar {
+  width: 60px; height: 60px; border-radius: 50%; font-size: 32px;
+  display: flex; align-items: center; justify-content: center;
+  background: radial-gradient(circle at 35% 30%, #2a7a35, #103f18);
+  border: 3px solid #d4a017;
+}
+.profile-head > div { flex: 1; }
+.profile-rank { font-size: 24px; font-weight: 900; color: #ffd60a; }
+
+.profile-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin: 16px 0; }
+.stat {
+  display: flex; flex-direction: column; align-items: center;
+  background: rgba(255, 255, 255, 0.07); border-radius: 10px; padding: 10px 4px;
+}
+.stat b { font-size: 20px; color: #ffd60a; }
+.stat span { font-size: 11px; color: rgba(255, 255, 255, 0.6); margin-top: 2px; }
+
+.profile-sub { font-size: 14px; color: #ffd60a; margin-bottom: 6px; }
+.history-list { display: flex; flex-direction: column; gap: 4px; max-height: 30vh; overflow-y: auto; }
+.history-row {
+  display: grid; grid-template-columns: 32px 1fr auto auto; gap: 8px;
+  align-items: center; padding: 6px 10px; border-radius: 8px; font-size: 13px;
+  background: rgba(255, 255, 255, 0.05);
+  border-left: 3px solid transparent;
+}
+.history-row.win { border-left-color: #7bf1a8; }
+.history-row.lose { border-left-color: #ff8fab; }
+.hist-result { font-weight: 800; text-align: center; }
+.history-row.win .hist-result { color: #7bf1a8; }
+.history-row.lose .hist-result { color: #ff8fab; }
+.hist-info { color: rgba(255, 255, 255, 0.7); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hist-score { color: #ffd60a; font-weight: 700; }
+.hist-rp { font-weight: 800; }
+.hist-rp.up { color: #7bf1a8; }
+.hist-rp.down { color: #ff8fab; }
+
+.friend-clickable { cursor: pointer; }
+.friend-clickable:hover { color: #ffd60a; }
+
+/* RP 변동 팝업 */
+.rp-popup {
+  text-align: center; font-size: 24px; font-weight: 900; margin: 10px 0;
+  animation: rpPop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.rp-popup.up { color: #7bf1a8; }
+.rp-popup.down { color: #ff8fab; }
+
+@keyframes rpPop {
+  0% { transform: scale(0.4) translateY(10px); opacity: 0; }
+  60% { transform: scale(1.2); }
+  100% { transform: scale(1); opacity: 1; }
+}
+
 /* 카드 도감 */
 .gallery-screen { padding: 24px; max-width: 940px; margin: 0 auto; }
 

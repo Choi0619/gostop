@@ -4,6 +4,9 @@ import { getSocket, closeSocket } from '../socket';
 import OnlineGameScreen from './OnlineGameScreen';
 import AvatarPicker from '../components/AvatarPicker';
 import DMChat from '../components/DMChat';
+import Leaderboard from '../components/Leaderboard';
+import ProfileModal from '../components/ProfileModal';
+import RankBadge from '../components/RankBadge';
 import { saveAuth, getToken } from '../api';
 
 // 로비: 방 목록 + 친구 + 방 내부(대기/채팅) + 온라인 게임
@@ -22,6 +25,8 @@ export default function LobbyScreen({ onExit }) {
   const [dmFriend, setDmFriend] = useState(null);
   const [unread, setUnread] = useState({});
   const [me, setMe] = useState(user);
+  const [showLeaderboard, setShowLeaderboard] = useState(false);
+  const [profileId, setProfileId] = useState(null);
 
   const loadFriends = useCallback(() => {
     api('/api/friends').then(setFriends).catch(() => {});
@@ -40,9 +45,12 @@ export default function LobbyScreen({ onExit }) {
     api('/api/dms-unread').then((rows) => setUnread(Object.fromEntries(rows.map((r) => [r.from_id, r.cnt])))).catch(() => {});
     const onDm = (m) => setUnread((u) => ({ ...u, [m.from_id]: (u[m.from_id] || 0) + 1 }));
     s.on('dm', onDm);
+    // 게임 후 RP 변동 → 내 정보 갱신
+    const onRp = () => api('/api/me').then(setMe).catch(() => {});
+    s.on('rp-update', onRp);
     return () => {
       s.off('rooms-updated'); s.off('room-updated'); s.off('online-users');
-      s.off('game-started'); s.off('invited'); s.off('dm');
+      s.off('game-started'); s.off('invited'); s.off('dm'); s.off('rp-update', onRp);
     };
   }, [loadFriends]);
 
@@ -77,7 +85,7 @@ export default function LobbyScreen({ onExit }) {
     <div className="lobby-screen">
       <div className="lobby-header">
         <h2>🎴 로비</h2>
-        <button className="avatar-medallion" onClick={() => setShowAvatar(true)} title="캐릭터 변경">{me?.avatar || '🐱'}</button>
+        <button className="avatar-medallion" onClick={() => me && setProfileId(me.id)} title="내 프로필">{me?.avatar || '🐱'}</button>
         <span className="lobby-user">
           <button className="nick-edit" title="닉네임 변경" onClick={async () => {
             const nick = prompt('새 닉네임 (2~12자)', me?.nickname);
@@ -89,8 +97,10 @@ export default function LobbyScreen({ onExit }) {
               closeSocket(); getSocket();
             } catch (e) { setError(e.message); }
           }}>{me?.nickname} ✏️</button>
-          <small>{me?.wins || 0}승 {me?.losses || 0}패 · 💰{(me?.money ?? 0).toLocaleString()}</small>
+          <RankBadge rp={me?.rp || 0} size="sm" />
         </span>
+        <button className="menu-btn small" onClick={() => setShowLeaderboard(true)}>🏆 랭킹</button>
+        <button className="menu-btn small" onClick={() => setShowAvatar(true)}>🎭 캐릭터</button>
         <button className="menu-btn small" onClick={() => setShowCreate(true)}>+ 방 만들기</button>
         <button className="menu-btn small" onClick={() => { closeSocket(); clearAuth(); onExit(); }}>로그아웃</button>
         <button className="menu-btn small" onClick={onExit}>← 메인</button>
@@ -132,7 +142,7 @@ export default function LobbyScreen({ onExit }) {
           </div>
           {friends.map((f) => (
             <div key={f.id} className="friend-item">
-              <span className={onlineIds.length && f.online !== false ? '' : ''}>
+              <span className="friend-clickable" onClick={() => f.userId && setProfileId(f.userId)}>
                 {f.avatar || '🐱'} {f.nickname} <small>({f.wins}승 {f.losses}패)</small>
               </span>
               {f.status === 'pending' && f.incoming && (
@@ -156,6 +166,8 @@ export default function LobbyScreen({ onExit }) {
       {showCreate && <CreateRoomModal onCreate={createRoom} onClose={() => setShowCreate(false)} />}
       {showAvatar && <AvatarPicker wins={me?.wins || 0} onClose={() => setShowAvatar(false)} onChange={(a) => setMe((m) => ({ ...m, avatar: a }))} />}
       {dmFriend && <DMChat friend={dmFriend} onClose={() => setDmFriend(null)} />}
+      {showLeaderboard && <Leaderboard onClose={() => setShowLeaderboard(false)} onProfile={(id) => { setShowLeaderboard(false); setProfileId(id); }} />}
+      {profileId && <ProfileModal userId={profileId} onClose={() => setProfileId(null)} />}
     </div>
   );
 }

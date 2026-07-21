@@ -14,6 +14,7 @@ import { playEventSound, sfx } from '../game/sound';
 export default function OnlineGameScreen({ room, onLeave, onExit }) {
   const [st, setSt] = useState(null);
   const [callout, setCallout] = useState(null);
+  const [rpDelta, setRpDelta] = useState(null);
   const [chat, setChat] = useState([]);
   const [msg, setMsg] = useState('');
   const prevEventsKey = useRef('');
@@ -50,10 +51,12 @@ export default function OnlineGameScreen({ room, onLeave, onExit }) {
       if (state.phase !== 'finished') finishedRef.current = false;
     };
     const onMsg = (m) => setChat((c) => [...c, m]);
+    const onRp = ({ delta }) => setRpDelta(delta);
     s.on('game-state', onState);
     s.on('chat-message', onMsg);
+    s.on('rp-update', onRp);
     s.emit('request-state'); // 첫 상태 놓침 방지
-    return () => { s.off('game-state', onState); s.off('chat-message', onMsg); };
+    return () => { s.off('game-state', onState); s.off('chat-message', onMsg); s.off('rp-update', onRp); };
   }, []);
 
   useEffect(() => { chatRef.current?.scrollTo(0, 99999); }, [chat]);
@@ -211,6 +214,11 @@ export default function OnlineGameScreen({ room, onLeave, onExit }) {
                   </div>
                 )}
               </>
+            )}
+            {rpDelta != null && (
+              <div className={`rp-popup ${rpDelta >= 0 ? 'up' : 'down'}`}>
+                {rpDelta >= 0 ? '▲ +' : '▼ '}{rpDelta} RP
+              </div>
             )}
             <div className="modal-actions center">
               <button className="menu-btn primary" onClick={onLeave}>한판 더 (대기실)</button>

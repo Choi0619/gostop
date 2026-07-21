@@ -42,6 +42,20 @@ export async function initDb() {
 
   try { await query(`ALTER TABLE users ADD COLUMN avatar TEXT DEFAULT '🐱'`); } catch { /* 이미 있음 */ }
   try { await query(`ALTER TABLE users ADD COLUMN email TEXT`); } catch { /* 이미 있음 */ }
+  try { await query(`ALTER TABLE users ADD COLUMN rp INTEGER DEFAULT 0`); } catch { /* 이미 있음 */ }
+  try { await query(`ALTER TABLE users ADD COLUMN theme TEXT DEFAULT 'classic'`); } catch { /* 이미 있음 */ }
+
+  // 개인 전적 기록 (1판당 참가자 수만큼 행)
+  await query(`CREATE TABLE IF NOT EXISTS match_history (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL,
+    won INTEGER NOT NULL,
+    score INTEGER DEFAULT 0,
+    rp_delta INTEGER DEFAULT 0,
+    players INTEGER DEFAULT 2,
+    opponents TEXT,
+    ts INTEGER NOT NULL
+  )`);
 
   await query(`CREATE TABLE IF NOT EXISTS dms (
     id SERIAL PRIMARY KEY,

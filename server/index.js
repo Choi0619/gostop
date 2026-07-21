@@ -39,7 +39,7 @@ app.post('/api/register', async (req, res) => {
     const hash = bcrypt.hashSync(password, 10);
     await query('INSERT INTO users (username, email, nickname, password_hash) VALUES ($1, $1, $2, $3)', [email, nickname, hash]);
     const [u] = await query('SELECT * FROM users WHERE email = $1', [email]);
-    res.json({ token: sign(u), user: { id: u.id, nickname: u.nickname, money: u.money, avatar: u.avatar } });
+    res.json({ token: sign(u), user: { id: u.id, nickname: u.nickname, money: u.money, avatar: u.avatar, rp: u.rp, theme: u.theme } });
   } catch (e) {
     res.status(400).json({ error: '이미 사용 중인 아이디 또는 닉네임입니다' });
   }
@@ -51,12 +51,30 @@ app.post('/api/login', async (req, res) => {
   if (!u || !bcrypt.compareSync(password || '', u.password_hash)) {
     return res.status(401).json({ error: '이메일 또는 비밀번호가 틀립니다' });
   }
-  res.json({ token: sign(u), user: { id: u.id, nickname: u.nickname, money: u.money, wins: u.wins, losses: u.losses, avatar: u.avatar } });
+  res.json({ token: sign(u), user: { id: u.id, nickname: u.nickname, money: u.money, wins: u.wins, losses: u.losses, avatar: u.avatar, rp: u.rp, theme: u.theme } });
 });
 
 app.get('/api/me', authMiddleware, async (req, res) => {
-  const [u] = await query('SELECT id, nickname, money, wins, losses, avatar FROM users WHERE id = $1', [req.user.id]);
+  const [u] = await query('SELECT id, nickname, money, wins, losses, avatar, rp, theme FROM users WHERE id = $1', [req.user.id]);
   res.json(u);
+});
+
+// 랭킹 순위표 (RP 내림차순)
+app.get('/api/leaderboard', authMiddleware, async (req, res) => {
+  const rows = await query('SELECT id, nickname, avatar, rp, wins, losses FROM users ORDER BY rp DESC, wins DESC LIMIT 100', []);
+  const ranked = rows.map((u, i) => ({ ...u, rank: i + 1 }));
+  const meRank = ranked.find((u) => u.id === req.user.id);
+  res.json({ top: ranked, me: meRank || null });
+});
+
+// 프로필 (본인 또는 타인) + 최근 전적
+app.get('/api/profile/:id', authMiddleware, async (req, res) => {
+  const id = +req.params.id;
+  const [u] = await query('SELECT id, nickname, avatar, rp, wins, losses, created_at FROM users WHERE id = $1', [id]);
+  if (!u) return res.status(404).json({ error: '없는 유저입니다' });
+  const history = await query('SELECT won, score, rp_delta, players, opponents, ts FROM match_history WHERE user_id = $1 ORDER BY ts DESC LIMIT 20', [id]);
+  const [rankRow] = await query('SELECT COUNT(*) + 1 AS rank FROM users WHERE rp > $1', [u.rp || 0]);
+  res.json({ user: u, history, rank: rankRow?.rank || null });
 });
 
 // 캐릭터: 승수로 잠금해제
@@ -104,7 +122,7 @@ app.get('/api/dms-unread', authMiddleware, async (req, res) => {
 app.get('/api/friends', authMiddleware, async (req, res) => {
   const rows = await query(
     `SELECT f.id, f.status, f.user_id, f.friend_id,
-            u.nickname, u.wins, u.losses, u.avatar
+            u.nickname, u.wins, u.losses, u.avatar, u.rp
      , u.id AS other_id
      FROM friends f
      JOIN users u ON u.id = CASE WHEN f.user_id = $1 THEN f.friend_id ELSE f.user_id END
@@ -116,6 +134,7 @@ app.get('/api/friends', authMiddleware, async (req, res) => {
     userId: r.other_id,
     nickname: r.nickname,
     avatar: r.avatar,
+    rp: r.rp,
     wins: r.wins,
     losses: r.losses,
     status: r.status,
