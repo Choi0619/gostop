@@ -23,3 +23,7 @@ cd client
 npm install
 npm run dev
 ```
+
+## 카드 이미지 출처
+
+화투 카드 SVG 48장은 [itsent-lab/hwatu](https://github.com/itsent-lab/hwatu) (MIT License)의 자산을 사용했습니다.
