@@ -1,38 +1,58 @@
 import { useEffect, useRef, useState } from 'react';
 import HwatuCard from '../components/HwatuCard';
+import ScorePanel from '../components/ScorePanel';
+import Callout from '../components/Callout';
+import Confetti from '../components/Confetti';
+import MuteButton from '../components/MuteButton';
 import { getSocket } from '../socket';
 import { getUser } from '../api';
 import ReactionBar from '../components/ReactionBar';
-
-const EVENT_LABEL = {
-  ppeok: '뻑!', jjok: '쪽!', ttadak: '따닥!', sseul: '쓸!', bomb: '폭탄!',
-  shake: '흔들기!', eatPpeok: '뻑 먹기!', go: 'GO!', stop: 'STOP!',
-  chongtong: '총통!', nagari: '나가리',
-};
+import { pickCallout } from '../game/callouts';
+import { playEventSound, sfx } from '../game/sound';
 
 // 서버 상태 기반 온라인 게임 화면
 export default function OnlineGameScreen({ room, onLeave, onExit }) {
   const [st, setSt] = useState(null);
-  const [toast, setToast] = useState(null);
+  const [callout, setCallout] = useState(null);
   const [chat, setChat] = useState([]);
   const [msg, setMsg] = useState('');
-  const seenEvents = useRef(0);
+  const prevEventsKey = useRef('');
+  const calloutKey = useRef(0);
+  const finishedRef = useRef(false);
   const chatRef = useRef(null);
 
   useEffect(() => {
     const s = getSocket();
     const onState = (state) => {
       setSt(state);
-      const fresh = (state.events || []).filter((e, i) => i >= seenEvents.current && EVENT_LABEL[e.type]);
-      seenEvents.current = state.events?.length || 0;
-      if (fresh.length) {
-        setToast(fresh.map((e) => EVENT_LABEL[e.type]).join(' '));
-        setTimeout(() => setToast(null), 1400);
+      // 새 이벤트 감지 (서버가 최근 이벤트만 보냄) → 사운드 + 멘트
+      const key = (state.events || []).map((e) => e.type).join('|') + ':' + (state.events?.length || 0);
+      if (key !== prevEventsKey.current) {
+        const fresh = state.events || [];
+        // 직전과 겹치지 않는 꼬리 이벤트만 재생 (근사)
+        const tail = fresh.slice(-2);
+        for (const e of tail) playEventSound(e.type);
+        const c = pickCallout(fresh);
+        if (c) {
+          calloutKey.current++;
+          setCallout({ ...c, _k: calloutKey.current });
+          setTimeout(() => setCallout(null), 1500);
+        }
+        prevEventsKey.current = key;
       }
+      // 게임 종료 사운드
+      if (state.phase === 'finished' && !finishedRef.current) {
+        finishedRef.current = true;
+        if (state.result?.type === 'nagari') sfx.flip();
+        else if (state.result?.winner === state.myIdx) sfx.win();
+        else sfx.lose();
+      }
+      if (state.phase !== 'finished') finishedRef.current = false;
     };
     const onMsg = (m) => setChat((c) => [...c, m]);
     s.on('game-state', onState);
     s.on('chat-message', onMsg);
+    s.emit('request-state'); // 첫 상태 놓침 방지
     return () => { s.off('game-state', onState); s.off('chat-message', onMsg); };
   }, []);
 
@@ -59,7 +79,8 @@ export default function OnlineGameScreen({ room, onLeave, onExit }) {
   const chooseWait = st.phase === 'chooseFloorMatch' && st.pending?.options;
 
   return (
-    <div className="game-screen online">
+    <div className={`game-screen online ${myTurn ? 'my-turn-glow' : ''}`}>
+      <MuteButton />
       <div className="online-main">
         {/* 상대들 */}
         <div className="opp-area">
@@ -135,7 +156,11 @@ export default function OnlineGameScreen({ room, onLeave, onExit }) {
 
       <ReactionBar />
 
-      {toast && <div className="toast">{toast}</div>}
+      {/* 실시간 점수 패널 (내 것) */}
+      <ScorePanel captured={me.captured} target={st.rules.targetScore} />
+
+      {/* 큰 멘트 */}
+      <Callout data={callout} />
 
       {/* 광팔기 결정 (4인) */}
       {st.phase === 'gwangSale' && !st.players[myIdx].folded && (
@@ -168,6 +193,7 @@ export default function OnlineGameScreen({ room, onLeave, onExit }) {
       {/* 결과 */}
       {st.phase === 'finished' && st.result && (
         <div className="modal-backdrop">
+          {st.result.winner === myIdx && <Confetti />}
           <div className="modal result-modal">
             {st.result.type === 'nagari' ? <h2>나가리 🤝</h2> : (
               <>

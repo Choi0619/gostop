@@ -159,6 +159,13 @@ export function attachGameSockets(io) {
       }
     });
 
+    // 게임 화면 진입 시 현재 상태 재요청 (첫 브로드캐스트 놓침 방지)
+    socket.on('request-state', () => {
+      const room = rooms.get(socket.roomCode);
+      const p = room?.players.find((pl) => pl.userId === user.id);
+      if (room?.state && p) socket.emit('game-state', sanitize(room.state, p.idx));
+    });
+
     socket.on('game-action', (a, cb) => {
       const room = rooms.get(socket.roomCode);
       if (!room?.state) return cb?.({ error: '게임 중이 아닙니다' });
