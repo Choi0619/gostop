@@ -286,6 +286,17 @@ function flipPhase(state, playerIdx, playResult) {
   }
 
   p.captured.push(...toCapture);
+  // 획득 연출용: 낸 카드 / 뒤집은 카드 / 딸려온 전체 카드를 기록
+  if (toCapture.length > 0) {
+    const played = playResult?.paired?.[0] || playResult?.laid || null;
+    state.events.push({
+      type: 'capture',
+      player: playerIdx,
+      cards: toCapture.map((c) => ({ ...c })),
+      played: played ? { ...played } : null,
+      flip: flip ? { ...flip } : null,
+    });
+  }
   if (gotJjok) { state.events.push({ type: 'jjok', player: playerIdx }); stealPi(state, playerIdx); }
   if (gotTtadak) { state.events.push({ type: 'ttadak', player: playerIdx }); stealPi(state, playerIdx); }
 

@@ -791,6 +791,74 @@ button { font-family: inherit; }
   100% { opacity: 0; transform: translate(-50%, -55%) scale(0.9); }
 }
 
+/* ── 획득 연출 (매칭 → 획득 더미) ── */
+.capture-flash {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  z-index: 180;
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.capture-flash.to-me { animation: flashToMe 1.05s cubic-bezier(0.5, 0, 0.7, 1) forwards; }
+.capture-flash.to-opp { animation: flashToOpp 1.05s cubic-bezier(0.5, 0, 0.7, 1) forwards; }
+
+@keyframes flashToMe {
+  0% { transform: translate(-50%, -50%) scale(0.5); opacity: 0; }
+  18% { transform: translate(-50%, -50%) scale(1.1); opacity: 1; }
+  32% { transform: translate(-50%, -50%) scale(1); }
+  70% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+  100% { transform: translate(-50%, 260px) scale(0.35); opacity: 0; }
+}
+
+@keyframes flashToOpp {
+  0% { transform: translate(-50%, -50%) scale(0.5); opacity: 0; }
+  18% { transform: translate(-50%, -50%) scale(1.1); opacity: 1; }
+  32% { transform: translate(-50%, -50%) scale(1); }
+  70% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+  100% { transform: translate(-50%, -320px) scale(0.35); opacity: 0; }
+}
+
+.cf-label {
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--accent, #ffd60a);
+  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.8);
+}
+
+.cf-cards { display: flex; gap: 6px; }
+
+.cf-card { position: relative; animation: cfPop 0.4s cubic-bezier(0.34, 1.6, 0.5, 1) backwards; }
+
+@keyframes cfPop {
+  0% { transform: translateY(20px) scale(0.7); opacity: 0; }
+  100% { transform: none; opacity: 1; }
+}
+
+/* 낸 패 / 뒤집기 강조 */
+.cf-played svg, .cf-played img { outline: 3px solid #ffd60a; border-radius: 6px; box-shadow: 0 0 16px rgba(255, 214, 10, 0.9); }
+.cf-flip svg, .cf-flip img { outline: 3px solid #7bf1a8; border-radius: 6px; box-shadow: 0 0 16px rgba(123, 241, 168, 0.8); }
+.cf-match svg, .cf-match img { box-shadow: 0 0 12px rgba(255, 255, 255, 0.6); border-radius: 6px; }
+
+.cf-tag {
+  position: absolute;
+  top: -16px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 10px;
+  font-weight: 800;
+  white-space: nowrap;
+  padding: 1px 6px;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.75);
+}
+.cf-played .cf-tag { color: #ffd60a; }
+.cf-flip .cf-tag { color: #7bf1a8; }
+
 /* 실시간 점수 패널 */
 .score-panel {
   position: fixed;

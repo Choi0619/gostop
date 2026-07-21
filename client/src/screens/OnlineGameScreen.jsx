@@ -4,6 +4,7 @@ import ScorePanel from '../components/ScorePanel';
 import Callout from '../components/Callout';
 import Confetti from '../components/Confetti';
 import MuteButton from '../components/MuteButton';
+import CaptureFlash from '../components/CaptureFlash';
 import { getSocket } from '../socket';
 import { getUser } from '../api';
 import ReactionBar from '../components/ReactionBar';
@@ -14,11 +15,14 @@ import { playEventSound, sfx } from '../game/sound';
 export default function OnlineGameScreen({ room, onLeave, onExit }) {
   const [st, setSt] = useState(null);
   const [callout, setCallout] = useState(null);
+  const [capFlash, setCapFlash] = useState(null);
+  const [justCaptured, setJustCaptured] = useState({});
   const [rpDelta, setRpDelta] = useState(null);
   const [chat, setChat] = useState([]);
   const [msg, setMsg] = useState('');
   const prevEventsKey = useRef('');
   const calloutKey = useRef(0);
+  const flashKey = useRef(0);
   const finishedRef = useRef(false);
   const chatRef = useRef(null);
 
@@ -31,13 +35,23 @@ export default function OnlineGameScreen({ room, onLeave, onExit }) {
       if (key !== prevEventsKey.current) {
         const fresh = state.events || [];
         // 직전과 겹치지 않는 꼬리 이벤트만 재생 (근사)
-        const tail = fresh.slice(-2);
+        const tail = fresh.slice(-3);
         for (const e of tail) playEventSound(e.type);
         const c = pickCallout(fresh);
         if (c) {
           calloutKey.current++;
           setCallout({ ...c, _k: calloutKey.current });
           setTimeout(() => setCallout(null), 1500);
+        }
+        // 획득 연출
+        const cap = [...fresh].reverse().find((e) => e.type === 'capture');
+        if (cap) {
+          flashKey.current++;
+          setCapFlash({ ...cap, _k: flashKey.current });
+          setTimeout(() => setCapFlash(null), 1100);
+          const ids = cap.cards.map((cc) => cc.id);
+          setJustCaptured((m) => ({ ...m, ...Object.fromEntries(ids.map((id) => [id, true])) }));
+          setTimeout(() => setJustCaptured({}), 1100);
         }
         prevEventsKey.current = key;
       }
@@ -99,7 +113,7 @@ export default function OnlineGameScreen({ room, onLeave, onExit }) {
                   <HwatuCard key={k} card={{ month: 1 }} width={38} faceDown />
                 ))}
               </div>
-              <CapturedRow captured={p.captured} small />
+              <CapturedRow captured={p.captured} small justCaptured={justCaptured} />
             </div>
           ))}
         </div>
@@ -123,7 +137,7 @@ export default function OnlineGameScreen({ room, onLeave, onExit }) {
 
         {/* 내 영역 */}
         <div className="my-area">
-          <CapturedRow captured={me.captured} />
+          <CapturedRow captured={me.captured} justCaptured={justCaptured} />
           <div className="hand-row my-hand">
             {me.hand.map((c) => (
               <HwatuCard key={c.id} card={c} width={62}
@@ -164,6 +178,9 @@ export default function OnlineGameScreen({ room, onLeave, onExit }) {
 
       {/* 큰 멘트 */}
       <Callout data={callout} />
+
+      {/* 획득 연출 */}
+      <CaptureFlash event={capFlash} mine={capFlash?.player === myIdx} />
 
       {/* 광팔기 결정 (4인) */}
       {st.phase === 'gwangSale' && !st.players[myIdx].folded && (
@@ -231,7 +248,7 @@ export default function OnlineGameScreen({ room, onLeave, onExit }) {
   );
 }
 
-function CapturedRow({ captured, small }) {
+function CapturedRow({ captured, small, justCaptured = {} }) {
   const groups = [
     ['광', captured.filter((c) => c.type === 'gwang')],
     ['열끗', captured.filter((c) => c.type === 'yeol')],
@@ -244,7 +261,11 @@ function CapturedRow({ captured, small }) {
         <div key={label} className="captured-group">
           <span className="captured-label">{label} {cards.length}</span>
           <div className="captured-cards">
-            {cards.map((c) => <HwatuCard key={c.id} card={c} width={small ? 38 : 46} />)}
+            {cards.map((c) => (
+              <span key={c.id} className={justCaptured[c.id] ? 'cap-pop' : ''}>
+                <HwatuCard card={c} width={small ? 38 : 46} />
+              </span>
+            ))}
           </div>
         </div>
       ))}

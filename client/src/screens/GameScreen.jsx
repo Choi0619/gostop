@@ -4,6 +4,7 @@ import ScorePanel from '../components/ScorePanel';
 import Callout from '../components/Callout';
 import Confetti from '../components/Confetti';
 import MuteButton from '../components/MuteButton';
+import CaptureFlash from '../components/CaptureFlash';
 import { createGame, playCard, chooseFloorMatch, declareGo, declareStop, playBomb, declareShake, legalActions, scoreOf } from '../game/engine';
 import { chooseAction } from '../game/ai';
 import { pickCallout } from '../game/callouts';
@@ -16,8 +17,10 @@ export default function GameScreen({ onExit }) {
   const [, setTick] = useState(0);
   const [callout, setCallout] = useState(null);
   const [justCaptured, setJustCaptured] = useState({}); // cardId -> true (방금 획득 애니메이션)
+  const [capFlash, setCapFlash] = useState(null); // 획득 연출
   const eventCursor = useRef(0);
   const calloutKey = useRef(0);
+  const flashKey = useRef(0);
   const ME = 0, AI = 1;
 
   const rerender = useCallback(() => setTick((t) => t + 1), []);
@@ -31,11 +34,16 @@ export default function GameScreen({ onExit }) {
     // 사운드
     for (const e of fresh) playEventSound(e.type);
 
-    // 방금 획득한 카드 반짝 표시
-    const capIds = fresh.flatMap((e) => e.card ? [e.card.id] : []);
-    if (capIds.length) {
-      setJustCaptured((m) => ({ ...m, ...Object.fromEntries(capIds.map((id) => [id, true])) }));
-      setTimeout(() => setJustCaptured({}), 700);
+    // 획득 연출 (매칭된 카드가 모여 반짝 → 획득 더미로)
+    const cap = [...fresh].reverse().find((e) => e.type === 'capture');
+    if (cap) {
+      flashKey.current++;
+      setCapFlash({ ...cap, _k: flashKey.current });
+      setTimeout(() => setCapFlash(null), 1100);
+      // 획득 더미의 해당 카드 팝
+      const ids = cap.cards.map((c) => c.id);
+      setJustCaptured((m) => ({ ...m, ...Object.fromEntries(ids.map((id) => [id, true])) }));
+      setTimeout(() => setJustCaptured({}), 1100);
     }
 
     // 큰 멘트
@@ -51,6 +59,8 @@ export default function GameScreen({ onExit }) {
     stateRef.current = createGame({ playerCount: 2 });
     eventCursor.current = 0;
     setCallout(null);
+    setCapFlash(null);
+    setJustCaptured({});
     rerender();
   }, [rerender]);
 
@@ -172,6 +182,9 @@ export default function GameScreen({ onExit }) {
 
       {/* 큰 멘트 */}
       <Callout data={callout} />
+
+      {/* 획득 연출 */}
+      <CaptureFlash event={capFlash} mine={capFlash?.player === ME} />
 
       {/* 고/스톱 선택 */}
       {s.phase === 'goStop' && s.pending.playerIdx === ME && (
