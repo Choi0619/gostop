@@ -15,13 +15,13 @@ export default function HwatuCard({ card, width = 80, faceDown = false, onClick,
   if (faceDown) {
     return (
       <svg width={width} height={height} viewBox="0 0 80 120" onClick={onClick} className={cls} style={style}>
-        <rect x="1" y="1" width="78" height="118" rx="6" fill="#a4161a" stroke="#660708" strokeWidth="2" />
-        <rect x="7" y="7" width="66" height="106" rx="4" fill="none" stroke="#e5383b" strokeWidth="1.2" />
+        <rect x="1" y="1" width="78" height="118" rx="6" fill="var(--card-back)" stroke="#000" strokeOpacity="0.4" strokeWidth="2" />
+        <rect x="7" y="7" width="66" height="106" rx="4" fill="none" stroke="var(--card-back-line)" strokeWidth="1.2" />
         <g opacity="0.9">
-          <circle cx="40" cy="60" r="18" fill="none" stroke="#e5383b" strokeWidth="1.5" />
-          <path d="M40 46 Q 48 54 40 60 Q 32 66 40 74" fill="none" stroke="#e5383b" strokeWidth="2" strokeLinecap="round" />
-          <circle cx="40" cy="52" r="2.5" fill="#e5383b" />
-          <circle cx="40" cy="68" r="2.5" fill="#e5383b" />
+          <circle cx="40" cy="60" r="18" fill="none" stroke="var(--card-back-line)" strokeWidth="1.5" />
+          <path d="M40 46 Q 48 54 40 60 Q 32 66 40 74" fill="none" stroke="var(--card-back-line)" strokeWidth="2" strokeLinecap="round" />
+          <circle cx="40" cy="52" r="2.5" fill="var(--card-back-line)" />
+          <circle cx="40" cy="68" r="2.5" fill="var(--card-back-line)" />
         </g>
       </svg>
     );

@@ -91,6 +91,18 @@ app.post('/api/avatar', authMiddleware, async (req, res) => {
   res.json({ ok: true, avatar });
 });
 
+// 테마 변경 (해금 조건: wins)
+const THEME_UNLOCKS = { classic: 0, navy: 0, wood: 0, ink: 0, wine: 0, sakura: 3 };
+app.post('/api/theme', authMiddleware, async (req, res) => {
+  const { theme } = req.body;
+  if (!(theme in THEME_UNLOCKS)) return res.status(400).json({ error: '없는 테마입니다' });
+  const [u] = await query('SELECT wins FROM users WHERE id = $1', [req.user.id]);
+  const need = THEME_UNLOCKS[theme];
+  if ((u?.wins || 0) < need) return res.status(400).json({ error: `${need}승 달성 시 해금됩니다` });
+  await query('UPDATE users SET theme = $1 WHERE id = $2', [theme, req.user.id]);
+  res.json({ ok: true, theme });
+});
+
 // 닉네임 변경 (새 토큰 발급)
 app.post('/api/nickname', authMiddleware, async (req, res) => {
   const nickname = (req.body.nickname || '').trim();

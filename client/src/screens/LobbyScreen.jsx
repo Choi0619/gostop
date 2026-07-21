@@ -7,6 +7,7 @@ import DMChat from '../components/DMChat';
 import Leaderboard from '../components/Leaderboard';
 import ProfileModal from '../components/ProfileModal';
 import RankBadge from '../components/RankBadge';
+import ThemePicker from '../components/ThemePicker';
 import { saveAuth, getToken } from '../api';
 
 // 로비: 방 목록 + 친구 + 방 내부(대기/채팅) + 온라인 게임
@@ -26,6 +27,7 @@ export default function LobbyScreen({ onExit }) {
   const [unread, setUnread] = useState({});
   const [me, setMe] = useState(user);
   const [showLeaderboard, setShowLeaderboard] = useState(false);
+  const [showTheme, setShowTheme] = useState(false);
   const [profileId, setProfileId] = useState(null);
 
   const loadFriends = useCallback(() => {
@@ -101,6 +103,7 @@ export default function LobbyScreen({ onExit }) {
         </span>
         <button className="menu-btn small" onClick={() => setShowLeaderboard(true)}>🏆 랭킹</button>
         <button className="menu-btn small" onClick={() => setShowAvatar(true)}>🎭 캐릭터</button>
+        <button className="menu-btn small" onClick={() => setShowTheme(true)}>🎨 테마</button>
         <button className="menu-btn small" onClick={() => setShowCreate(true)}>+ 방 만들기</button>
         <button className="menu-btn small" onClick={() => { closeSocket(); clearAuth(); onExit(); }}>로그아웃</button>
         <button className="menu-btn small" onClick={onExit}>← 메인</button>
@@ -167,6 +170,7 @@ export default function LobbyScreen({ onExit }) {
       {showAvatar && <AvatarPicker wins={me?.wins || 0} onClose={() => setShowAvatar(false)} onChange={(a) => setMe((m) => ({ ...m, avatar: a }))} />}
       {dmFriend && <DMChat friend={dmFriend} onClose={() => setDmFriend(null)} />}
       {showLeaderboard && <Leaderboard onClose={() => setShowLeaderboard(false)} onProfile={(id) => { setShowLeaderboard(false); setProfileId(id); }} />}
+      {showTheme && <ThemePicker wins={me?.wins || 0} current={me?.theme} onClose={() => setShowTheme(false)} onChange={(t) => setMe((m) => ({ ...m, theme: t }))} />}
       {profileId && <ProfileModal userId={profileId} onClose={() => setProfileId(null)} />}
     </div>
   );

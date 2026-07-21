@@ -3,23 +3,41 @@ import HwatuCard from './components/HwatuCard';
 import GameScreen from './screens/GameScreen';
 import LoginScreen from './screens/LoginScreen';
 import LobbyScreen from './screens/LobbyScreen';
+import Petals from './components/Petals';
 import { getUser } from './api';
+import { applyTheme } from './game/themes';
 import { CARDS } from './game/cards';
 import './App.css';
 
 export default function App() {
   const [screen, setScreen] = useState('main'); // main | gallery | game | login | lobby
+  const [theme, setTheme] = useState(getUser()?.theme || 'classic');
 
-  if (screen === 'gallery') return <Gallery onBack={() => setScreen('main')} />;
-  if (screen === 'game') return <GameScreen onExit={() => setScreen('main')} />;
-  if (screen === 'login') return <LoginScreen onLogin={() => setScreen('lobby')} onBack={() => setScreen('main')} />;
-  if (screen === 'lobby') return <LobbyScreen onExit={() => setScreen('main')} />;
-  return (
+  useEffect(() => { applyTheme(getUser()?.theme || 'classic'); }, [screen]);
+  useEffect(() => {
+    const on = (e) => setTheme(e.detail);
+    window.addEventListener('themechange', on);
+    return () => window.removeEventListener('themechange', on);
+  }, []);
+
+  let content;
+  if (screen === 'gallery') content = <Gallery onBack={() => setScreen('main')} />;
+  else if (screen === 'game') content = <GameScreen onExit={() => setScreen('main')} />;
+  else if (screen === 'login') content = <LoginScreen onLogin={() => setScreen('lobby')} onBack={() => setScreen('main')} />;
+  else if (screen === 'lobby') content = <LobbyScreen onExit={() => setScreen('main')} />;
+  else content = (
     <MainScreen
       onGallery={() => setScreen('gallery')}
       onPlayAI={() => setScreen('game')}
       onOnline={() => setScreen(getUser() ? 'lobby' : 'login')}
     />
+  );
+
+  return (
+    <>
+      {theme === 'sakura' && <Petals />}
+      {content}
+    </>
   );
 }
 
