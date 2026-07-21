@@ -244,7 +244,7 @@ function CapturedRow({ captured, small }) {
         <div key={label} className="captured-group">
           <span className="captured-label">{label} {cards.length}</span>
           <div className="captured-cards">
-            {cards.map((c) => <HwatuCard key={c.id} card={c} width={small ? 28 : 34} />)}
+            {cards.map((c) => <HwatuCard key={c.id} card={c} width={small ? 38 : 46} />)}
           </div>
         </div>
       ))}

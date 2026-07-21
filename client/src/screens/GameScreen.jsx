@@ -239,7 +239,7 @@ function CapturedRow({ captured, justCaptured = {} }) {
           <div className="captured-cards">
             {cards.map((c) => (
               <span key={c.id} className={justCaptured[c.id] ? 'cap-pop' : ''}>
-                <HwatuCard card={c} width={34} />
+                <HwatuCard card={c} width={46} />
               </span>
             ))}
           </div>

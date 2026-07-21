@@ -384,7 +384,7 @@ button { font-family: inherit; }
 .captured-row {
   display: flex;
   gap: 14px;
-  min-height: 58px;
+  min-height: 74px;
   align-items: center;
   flex-wrap: wrap;
 }
@@ -398,9 +398,10 @@ button { font-family: inherit; }
   writing-mode: vertical-rl;
 }
 
-.captured-cards { display: flex; }
-.captured-cards svg { margin-left: -14px; }
-.captured-cards svg:first-child { margin-left: 0; }
+.captured-cards { display: flex; align-items: center; }
+.captured-cards svg, .captured-cards img, .captured-cards .cap-pop { margin-left: -16px; }
+.captured-cards > :first-child, .captured-cards svg:first-child, .captured-cards img:first-child { margin-left: 0; }
+.captured-cards .cap-pop:first-child { margin-left: 0; }
 
 .toast {
   position: fixed;
