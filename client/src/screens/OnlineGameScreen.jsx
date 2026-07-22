@@ -18,6 +18,7 @@ export default function OnlineGameScreen({ room, onLeave, onExit }) {
   const [capFlash, setCapFlash] = useState(null);
   const [justCaptured, setJustCaptured] = useState({});
   const [rpDelta, setRpDelta] = useState(null);
+  const [notice, setNotice] = useState(null); // 액션 실패/재접속 안내
   const [chat, setChat] = useState([]);
   const [msg, setMsg] = useState('');
   const prevEventsKey = useRef('');
@@ -66,18 +67,28 @@ export default function OnlineGameScreen({ room, onLeave, onExit }) {
     };
     const onMsg = (m) => setChat((c) => [...c, m]);
     const onRp = ({ delta }) => setRpDelta(delta);
+    const onConnect = () => { s.emit('request-state'); setNotice('연결됨'); setTimeout(() => setNotice(null), 1200); };
+    const onDisconnect = () => setNotice('연결 끊김 — 재접속 중...');
     s.on('game-state', onState);
     s.on('chat-message', onMsg);
     s.on('rp-update', onRp);
+    s.io.on('reconnect', onConnect);
+    s.on('disconnect', onDisconnect);
     s.emit('request-state'); // 첫 상태 놓침 방지
-    return () => { s.off('game-state', onState); s.off('chat-message', onMsg); s.off('rp-update', onRp); };
+    return () => {
+      s.off('game-state', onState); s.off('chat-message', onMsg); s.off('rp-update', onRp);
+      s.io.off('reconnect', onConnect); s.off('disconnect', onDisconnect);
+    };
   }, []);
 
   useEffect(() => { chatRef.current?.scrollTo(0, 99999); }, [chat]);
 
   if (!st) return <div className="game-screen"><p style={{ margin: 'auto' }}>게임 준비 중...</p></div>;
 
-  const act = (a) => getSocket().emit('game-action', a, (r) => { if (r?.error) console.warn(r.error); });
+  const showNotice = (t) => { setNotice(t); setTimeout(() => setNotice(null), 1800); };
+  const act = (a) => getSocket().emit('game-action', a, (r) => {
+    if (r?.error) showNotice(r.error); // 실패를 화면에 표시 (조용히 무시하지 않음)
+  });
 
   const me = st.me;
   const myIdx = st.myIdx;
@@ -181,6 +192,9 @@ export default function OnlineGameScreen({ room, onLeave, onExit }) {
 
       {/* 획득 연출 */}
       <CaptureFlash event={capFlash} mine={capFlash?.player === myIdx} />
+
+      {/* 액션 실패/재접속 안내 */}
+      {notice && <div className="game-notice">{notice}</div>}
 
       {/* 광팔기 결정 (4인) */}
       {st.phase === 'gwangSale' && !st.players[myIdx].folded && (

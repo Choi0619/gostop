@@ -859,6 +859,29 @@ button { font-family: inherit; }
 .cf-played .cf-tag { color: #ffd60a; }
 .cf-flip .cf-tag { color: #7bf1a8; }
 
+/* 액션 실패/재접속 안내 */
+.game-notice {
+  position: fixed;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 220;
+  background: rgba(179, 0, 27, 0.92);
+  color: #fff;
+  font-weight: 700;
+  font-size: 14px;
+  padding: 8px 18px;
+  border-radius: 20px;
+  border: 1.5px solid rgba(255, 255, 255, 0.3);
+  animation: noticeIn 0.25s ease;
+  pointer-events: none;
+}
+
+@keyframes noticeIn {
+  from { opacity: 0; transform: translate(-50%, -8px); }
+  to { opacity: 1; transform: translateX(-50%); }
+}
+
 /* 실시간 점수 패널 */
 .score-panel {
   position: fixed;

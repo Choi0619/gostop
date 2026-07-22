@@ -62,6 +62,14 @@ function lobbyRooms() {
   return [...rooms.values()].map(roomSummary);
 }
 
+// userId가 속한 방 찾기 (소켓 재접속으로 socket.roomCode를 잃어도 복구 가능)
+function findRoomOf(userId) {
+  for (const r of rooms.values()) {
+    if (r.players.some((p) => p.userId === userId)) return r;
+  }
+  return null;
+}
+
 export function attachGameSockets(io) {
   io.on('connection', async (socket) => {
     const user = socket.user; // { id, nickname }
@@ -160,18 +168,28 @@ export function attachGameSockets(io) {
       }
     });
 
-    // 게임 화면 진입 시 현재 상태 재요청 (첫 브로드캐스트 놓침 방지)
+    // 게임 화면 진입 시 현재 상태 재요청 (첫 브로드캐스트 놓침 방지 + 재접속 복구)
     socket.on('request-state', () => {
-      const room = rooms.get(socket.roomCode);
+      const room = rooms.get(socket.roomCode) || findRoomOf(user.id);
       const p = room?.players.find((pl) => pl.userId === user.id);
-      if (room?.state && p) socket.emit('game-state', sanitize(room.state, p.idx));
+      if (room && p) {
+        socket.join(room.code);      // 재접속 소켓을 방에 다시 합류
+        socket.roomCode = room.code;
+        if (room.state) socket.emit('game-state', sanitize(room.state, p.idx));
+        else socket.emit('room-updated', roomSummary(room));
+      }
     });
 
     socket.on('game-action', (a, cb) => {
-      const room = rooms.get(socket.roomCode);
+      const room = rooms.get(socket.roomCode) || findRoomOf(user.id);
       if (!room?.state) return cb?.({ error: '게임 중이 아닙니다' });
       const p = room.players.find((pl) => pl.userId === user.id);
       if (!p) return cb?.({ error: '플레이어가 아닙니다' });
+      // 재접속 복구: 소켓이 방을 잃었으면 다시 합류
+      if (socket.roomCode !== room.code) { socket.join(room.code); socket.roomCode = room.code; }
+      if (room.state.turn !== p.idx && ['play', 'bomb', 'shake'].includes(a.action)) {
+        return cb?.({ error: '아직 당신 차례가 아니에요' });
+      }
       const s = room.state;
       try {
         if (a.action === 'play') playCard(s, p.idx, a.cardId ?? null);
