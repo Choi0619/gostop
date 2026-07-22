@@ -7,9 +7,9 @@ export function cardImage(card) {
   return `/cards/m${pad(month)}-${pad(index + 1)}.svg`;
 }
 
-export default function HwatuCard({ card, width = 80, faceDown = false, onClick, selected = false, dealt = false }) {
+export default function HwatuCard({ card, width = 80, faceDown = false, onClick, selected = false, dealt = false, hint = false, hintTarget = false }) {
   const height = width * 1.5;
-  const cls = `hwatu-card ${selected ? 'selected' : ''} ${dealt ? 'dealt' : ''}`;
+  const cls = `hwatu-card ${selected ? 'selected' : ''} ${dealt ? 'dealt' : ''} ${hint ? 'hint' : ''} ${hintTarget ? 'hint-target' : ''}`;
   const style = { cursor: onClick ? 'pointer' : 'default', borderRadius: 6, width, height, display: 'block' };
 
   if (faceDown) {

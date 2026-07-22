@@ -105,6 +105,11 @@ export default function OnlineGameScreen({ room, onLeave, onExit }) {
     monthCount[m] === 3 && st.floor.filter((c) => c.month === +m).length === 0 && st.rules.heundeulgi !== false);
 
   const chooseWait = st.phase === 'chooseFloorMatch' && st.pending?.options;
+  // 짝 힌트
+  const floorMonths = new Set(st.floor.map((c) => c.month));
+  const handMonths = new Set(me.hand.map((c) => c.month));
+  const handHint = (c) => myTurn && floorMonths.has(c.month);
+  const floorHint = (c) => myTurn && handMonths.has(c.month);
 
   return (
     <div className={`game-screen online ${myTurn ? 'my-turn-glow' : ''}`}>
@@ -140,6 +145,7 @@ export default function OnlineGameScreen({ room, onLeave, onExit }) {
               const selectable = chooseWait && st.pending.options.includes(c.id);
               return (
                 <HwatuCard key={c.id} card={c} width={54} selected={selectable}
+                  hintTarget={floorHint(c)}
                   onClick={selectable ? () => act({ action: 'chooseFloorMatch', cardId: c.id }) : undefined} />
               );
             })}
@@ -151,8 +157,11 @@ export default function OnlineGameScreen({ room, onLeave, onExit }) {
           <CapturedRow captured={me.captured} justCaptured={justCaptured} />
           <div className="hand-row my-hand">
             {me.hand.map((c) => (
-              <HwatuCard key={c.id} card={c} width={62}
-                onClick={myTurn ? () => act({ action: 'play', cardId: c.id }) : undefined} />
+              <span key={c.id} className={handHint(c) ? 'hint-wrap' : ''}>
+                <HwatuCard card={c} width={62} hint={handHint(c)}
+                  onClick={myTurn ? () => act({ action: 'play', cardId: c.id }) : undefined} />
+                {handHint(c) && <span className="eat-badge">먹기</span>}
+              </span>
             ))}
             {myTurn && me.bombPasses > 0 && (
               <button className="menu-btn small" onClick={() => act({ action: 'play', cardId: null })}>패스 ({me.bombPasses})</button>

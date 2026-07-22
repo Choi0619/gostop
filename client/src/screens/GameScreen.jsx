@@ -110,6 +110,11 @@ export default function GameScreen({ onExit }) {
 
   const me = s.players[ME], ai = s.players[AI];
   const myTurn = s.phase === 'play' && s.turn === ME;
+  // 짝 힌트: 내 차례일 때 바닥과 월이 맞는 손패 / 먹을 수 있는 바닥 카드
+  const floorMonths = new Set(s.floor.map((c) => c.month));
+  const handMonths = new Set(me.hand.map((c) => c.month));
+  const handHint = (c) => myTurn && floorMonths.has(c.month);
+  const floorHint = (c) => myTurn && handMonths.has(c.month);
   const acts = myTurn ? legalActions(s) : [];
   const bombAct = acts.find((a) => a.action === 'bomb');
   const shakeAct = acts.find((a) => a.action === 'shake');
@@ -151,6 +156,7 @@ export default function GameScreen({ onExit }) {
             return (
               <HwatuCard key={c.id} card={c} width={56}
                 selected={selectable}
+                hintTarget={floorHint(c)}
                 onClick={selectable ? () => { chooseFloorMatch(s, c.id); flushEvents(); rerender(); } : undefined} />
             );
           })}
@@ -162,8 +168,11 @@ export default function GameScreen({ onExit }) {
         <CapturedRow captured={me.captured} justCaptured={justCaptured} />
         <div className="hand-row my-hand">
           {me.hand.map((c) => (
-            <HwatuCard key={c.id} card={c} width={64}
-              onClick={myTurn ? () => onPlay(c.id) : undefined} />
+            <span key={c.id} className={handHint(c) ? 'hint-wrap' : ''}>
+              <HwatuCard card={c} width={64} hint={handHint(c)}
+                onClick={myTurn ? () => onPlay(c.id) : undefined} />
+              {handHint(c) && <span className="eat-badge">먹기</span>}
+            </span>
           ))}
           {myTurn && me.bombPasses > 0 && (
             <button className="menu-btn small" onClick={() => onPlay(null)}>패스 ({me.bombPasses})</button>
