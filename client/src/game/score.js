@@ -22,6 +22,36 @@ export function countTti(cards) {
   return cards.filter((c) => c.type === 'tti');
 }
 
+// 획득 더미별 현재 점수 (광/열끗/띠/피)
+export function pileScore(type, captured, opts = {}) {
+  if (type === 'gwang') {
+    const g = countGwang(captured);
+    if (g.length < 3) return 0;
+    if (g.length === 5) return 15;
+    if (g.length === 4) return 4;
+    return g.some((c) => c.special === 'bigwang') ? 2 : 3;
+  }
+  if (type === 'yeol') {
+    const y = countYeol(captured, opts);
+    let s = y.length >= 5 ? y.length - 4 : 0;
+    if (y.filter((c) => c.godori).length === 3) s += 5;
+    return s;
+  }
+  if (type === 'tti') {
+    const t = countTti(captured);
+    let s = t.length >= 5 ? t.length - 4 : 0;
+    for (const color of ['hong', 'cheong', 'cho']) {
+      if (t.filter((c) => c.ttiColor === color).length === 3) s += 3;
+    }
+    return s;
+  }
+  if (type === 'pi') {
+    const pi = countPi(captured, opts);
+    return pi >= 10 ? pi - 9 : 0;
+  }
+  return 0;
+}
+
 // 기본 점수 (고/흔들기/박 배수 적용 전)
 export function baseScore(captured, opts = {}) {
   const detail = [];

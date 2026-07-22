@@ -395,7 +395,34 @@ button { font-family: inherit; }
   font-size: 11px;
   font-weight: 700;
   color: rgba(255, 255, 255, 0.6);
-  writing-mode: vertical-rl;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+/* 획득 더미별 점수 (한게임 스타일) */
+.pile-pts {
+  display: block;
+  font-size: 13px;
+  font-style: normal;
+  font-weight: 800;
+  color: #ff9505;
+  margin-top: 1px;
+}
+
+/* 자동치기 버튼 */
+.auto-btn {
+  background: rgba(255, 149, 5, 0.22);
+  border-color: #ff9505;
+  color: #ffd60a;
+}
+.auto-btn:hover:not(:disabled) { background: rgba(255, 149, 5, 0.38); }
+
+/* 낸 카드 바닥 착지 */
+.floor-drop { display: inline-block; animation: floorDrop 0.42s cubic-bezier(0.3, 1.5, 0.5, 1); }
+@keyframes floorDrop {
+  0% { transform: translateY(-90px) scale(1.25) rotate(-8deg); filter: drop-shadow(0 12px 14px rgba(0,0,0,0.5)); }
+  70% { transform: translateY(4px) scale(1.02); }
+  100% { transform: none; }
 }
 
 .captured-cards { display: flex; align-items: center; }
@@ -824,6 +851,15 @@ button { font-family: inherit; }
 }
 
 .callout-great .callout-label { color: #ffd60a; text-shadow: 0 0 30px rgba(255, 214, 10, 0.9); }
+.callout-fire .callout-label {
+  color: #ff9505;
+  text-shadow: 0 0 20px #ff5714, 0 0 40px #ff9505, 0 2px 4px #7a0012;
+  animation: fireShake 0.5s ease-in-out infinite;
+}
+@keyframes fireShake {
+  0%, 100% { transform: rotate(-2deg) scale(1); }
+  50% { transform: rotate(2deg) scale(1.06); }
+}
 .callout-good .callout-label { color: #7bf1a8; text-shadow: 0 0 24px rgba(123, 241, 168, 0.8); }
 .callout-bad .callout-label { color: #ff6b6b; text-shadow: 0 0 24px rgba(255, 107, 107, 0.8); }
 .callout-neutral .callout-label { color: #dee2e6; }

@@ -12,6 +12,27 @@ const cardValue = (c) => {
 
 const byMonth = (cards, m) => cards.filter((c) => c.month === m);
 
+// 온라인용 간이 자동수: 서버 상태(st: {me:{hand,bombPasses}, floor})만으로 계산
+export function pickAutoMove(st) {
+  const hand = st.me?.hand || [];
+  const floor = st.floor || [];
+  if (hand.length === 0) {
+    if (st.me?.bombPasses > 0) return { action: 'play', cardId: null };
+    return null;
+  }
+  const floorByMonth = (m) => floor.filter((c) => c.month === m);
+  let best = null, bestScore = -Infinity;
+  for (const c of hand) {
+    const matches = floorByMonth(c.month);
+    let s;
+    if (matches.length === 3) s = 12; // 뻑 먹기
+    else if (matches.length > 0) s = 3 + Math.max(...matches.map(cardValue));
+    else s = -cardValue(c); // 버리기: 가치 낮은 것 우선
+    if (s > bestScore) { bestScore = s; best = c; }
+  }
+  return best ? { action: 'play', cardId: best.id } : null;
+}
+
 // 낼 카드 선택: 먹을 수 있는 것 중 가치 최대, 없으면 상대에게 덜 유리한 카드 버리기
 export function chooseAction(state, playerIdx) {
   const acts = legalActions(state);

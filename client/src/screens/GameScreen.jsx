@@ -7,6 +7,7 @@ import MuteButton from '../components/MuteButton';
 import CaptureFlash from '../components/CaptureFlash';
 import { createGame, playCard, chooseFloorMatch, declareGo, declareStop, playBomb, declareShake, legalActions, scoreOf } from '../game/engine';
 import { chooseAction } from '../game/ai';
+import { pileScore } from '../game/score';
 import { pickCallout } from '../game/callouts';
 import { playEventSound, sfx } from '../game/sound';
 import { getUser } from '../api';
@@ -17,6 +18,7 @@ export default function GameScreen({ onExit }) {
   const [, setTick] = useState(0);
   const [callout, setCallout] = useState(null);
   const [justCaptured, setJustCaptured] = useState({}); // cardId -> true (방금 획득 애니메이션)
+  const [justLaid, setJustLaid] = useState(null); // 방금 바닥에 낸 카드 id
   const [capFlash, setCapFlash] = useState(null); // 획득 연출
   const eventCursor = useRef(0);
   const calloutKey = useRef(0);
@@ -33,6 +35,10 @@ export default function GameScreen({ onExit }) {
 
     // 사운드
     for (const e of fresh) playEventSound(e.type);
+
+    // 낸 카드 바닥 착지
+    const laid = [...fresh].reverse().find((e) => e.type === 'lay');
+    if (laid) { setJustLaid(laid.card.id); setTimeout(() => setJustLaid(null), 450); }
 
     // 획득 연출 (매칭된 카드가 모여 반짝 → 획득 더미로)
     const cap = [...fresh].reverse().find((e) => e.type === 'capture');
@@ -129,6 +135,18 @@ export default function GameScreen({ onExit }) {
     rerender();
   };
 
+  const autoPlay = () => {
+    if (!myTurn) return;
+    const a = chooseAction(s, ME);
+    try {
+      if (a.action === 'bomb') playBomb(s, ME, a.month);
+      else if (a.action === 'chooseFloorMatch') chooseFloorMatch(s, a.cardId);
+      else playCard(s, ME, a.cardId);
+    } catch { return; }
+    flushEvents();
+    rerender();
+  };
+
   return (
     <div className={`game-screen ${myTurn ? 'my-turn-glow' : ''}`}>
       <MuteButton />
@@ -154,10 +172,12 @@ export default function GameScreen({ onExit }) {
           {s.floor.map((c) => {
             const selectable = s.phase === 'chooseFloorMatch' && s.pending.playerIdx === ME && s.pending.options.includes(c.id);
             return (
-              <HwatuCard key={c.id} card={c} width={56}
-                selected={selectable}
-                hintTarget={floorHint(c)}
-                onClick={selectable ? () => { chooseFloorMatch(s, c.id); flushEvents(); rerender(); } : undefined} />
+              <span key={c.id} className={justLaid === c.id ? 'floor-drop' : ''}>
+                <HwatuCard card={c} width={56}
+                  selected={selectable}
+                  hintTarget={floorHint(c)}
+                  onClick={selectable ? () => { chooseFloorMatch(s, c.id); flushEvents(); rerender(); } : undefined} />
+              </span>
             );
           })}
         </div>
@@ -182,6 +202,7 @@ export default function GameScreen({ onExit }) {
           <span className="player-name"><span className="avatar-inline">{getUser()?.avatar || '😎'}</span> 나 {myTurn && <b className="turn-badge">내 차례</b>}</span>
           {bombAct && <button className="menu-btn small primary" onClick={() => { playBomb(s, ME, bombAct.month); flushEvents(); rerender(); }}>💣 폭탄 ({bombAct.month}월)</button>}
           {shakeAct && <button className="menu-btn small" onClick={() => { declareShake(s, ME, shakeAct.month); flushEvents(); rerender(); }}>👋 흔들기 ({shakeAct.month}월)</button>}
+          {myTurn && <button className="menu-btn small auto-btn" onClick={autoPlay}>⚡ 자동치기</button>}
           <button className="menu-btn small" onClick={onExit}>나가기</button>
         </div>
       </div>
@@ -245,19 +266,22 @@ export default function GameScreen({ onExit }) {
   );
 }
 
-// 획득 패: 종류별로 묶어서 표시
+// 획득 패: 종류별로 묶어서 표시 (+ 더미별 점수)
 function CapturedRow({ captured, justCaptured = {} }) {
   const groups = [
-    ['광', captured.filter((c) => c.type === 'gwang')],
-    ['열끗', captured.filter((c) => c.type === 'yeol')],
-    ['띠', captured.filter((c) => c.type === 'tti')],
-    ['피', captured.filter((c) => c.type === 'pi')],
+    ['광', 'gwang', captured.filter((c) => c.type === 'gwang')],
+    ['열끗', 'yeol', captured.filter((c) => c.type === 'yeol')],
+    ['띠', 'tti', captured.filter((c) => c.type === 'tti')],
+    ['피', 'pi', captured.filter((c) => c.type === 'pi')],
   ];
   return (
     <div className="captured-row">
-      {groups.map(([label, cards]) => cards.length > 0 && (
+      {groups.map(([label, type, cards]) => cards.length > 0 && (
         <div key={label} className="captured-group">
-          <span className="captured-label">{label} {cards.length}</span>
+          <span className="captured-label">
+            {label} {cards.length}
+            {pileScore(type, captured) > 0 && <em className="pile-pts">{pileScore(type, captured)}점</em>}
+          </span>
           <div className="captured-cards">
             {cards.map((c) => (
               <span key={c.id} className={justCaptured[c.id] ? 'cap-pop' : ''}>

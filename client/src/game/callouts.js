@@ -7,8 +7,8 @@ export const CALLOUTS = {
   eatPpeok: { label: '뻑 먹기!', sub: '무더기째 꿀꺽~', variant: 'great' },
   bomb: { label: '폭탄!', sub: 'three! 뻥이야!', variant: 'great' },
   shake: { label: '흔들기!', sub: '점수 두 배 간다', variant: 'good' },
-  go: { label: 'GO!', sub: '멈출 수 없다!', variant: 'great' },
-  stop: { label: 'STOP!', sub: '여기서 끝!', variant: 'good' },
+  go: { label: '🔥 GO! 🔥', sub: '멈출 수 없다!', variant: 'fire' },
+  stop: { label: '✋ STOP!', sub: '여기서 끝! 계산 들어갑니다', variant: 'good' },
   chongtong: { label: '총통!', sub: '같은 패 네 장, 즉시 승리!', variant: 'great' },
   nagari: { label: '나가리', sub: '이번 판은 무승부', variant: 'neutral' },
   stealPi: null, // 표시 안 함

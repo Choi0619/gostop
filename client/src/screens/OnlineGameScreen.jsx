@@ -10,6 +10,8 @@ import { getUser } from '../api';
 import ReactionBar from '../components/ReactionBar';
 import { pickCallout } from '../game/callouts';
 import { playEventSound, sfx } from '../game/sound';
+import { pickAutoMove } from '../game/ai';
+import { pileScore } from '../game/score';
 
 // 서버 상태 기반 온라인 게임 화면
 export default function OnlineGameScreen({ room, onLeave, onExit }) {
@@ -17,6 +19,7 @@ export default function OnlineGameScreen({ room, onLeave, onExit }) {
   const [callout, setCallout] = useState(null);
   const [capFlash, setCapFlash] = useState(null);
   const [justCaptured, setJustCaptured] = useState({});
+  const [justLaid, setJustLaid] = useState(null);
   const [rpDelta, setRpDelta] = useState(null);
   const [notice, setNotice] = useState(null); // 액션 실패/재접속 안내
   const [chat, setChat] = useState([]);
@@ -38,6 +41,8 @@ export default function OnlineGameScreen({ room, onLeave, onExit }) {
         // 직전과 겹치지 않는 꼬리 이벤트만 재생 (근사)
         const tail = fresh.slice(-3);
         for (const e of tail) playEventSound(e.type);
+        const laid = [...fresh].reverse().find((e) => e.type === 'lay');
+        if (laid) { setJustLaid(laid.card.id); setTimeout(() => setJustLaid(null), 450); }
         const c = pickCallout(fresh);
         if (c) {
           calloutKey.current++;
@@ -144,9 +149,11 @@ export default function OnlineGameScreen({ room, onLeave, onExit }) {
             {st.floor.map((c) => {
               const selectable = chooseWait && st.pending.options.includes(c.id);
               return (
-                <HwatuCard key={c.id} card={c} width={54} selected={selectable}
-                  hintTarget={floorHint(c)}
-                  onClick={selectable ? () => act({ action: 'chooseFloorMatch', cardId: c.id }) : undefined} />
+                <span key={c.id} className={justLaid === c.id ? 'floor-drop' : ''}>
+                  <HwatuCard card={c} width={54} selected={selectable}
+                    hintTarget={floorHint(c)}
+                    onClick={selectable ? () => act({ action: 'chooseFloorMatch', cardId: c.id }) : undefined} />
+                </span>
               );
             })}
           </div>
@@ -172,6 +179,7 @@ export default function OnlineGameScreen({ room, onLeave, onExit }) {
             <span className="player-score">{st.players[myIdx]?.score}점 {me.goCount > 0 && `· ${me.goCount}고`}</span>
             {myTurn && bombMonth && <button className="menu-btn small primary" onClick={() => act({ action: 'bomb', month: +bombMonth })}>💣 폭탄 ({bombMonth}월)</button>}
             {myTurn && shakeMonth && <button className="menu-btn small" onClick={() => act({ action: 'shake', month: +shakeMonth })}>👋 흔들기 ({shakeMonth}월)</button>}
+            {myTurn && <button className="menu-btn small auto-btn" onClick={() => { const m = pickAutoMove(st); if (m) act(m); }}>⚡ 자동치기</button>}
             <button className="menu-btn small" onClick={onExit}>나가기</button>
           </div>
         </div>
@@ -273,16 +281,19 @@ export default function OnlineGameScreen({ room, onLeave, onExit }) {
 
 function CapturedRow({ captured, small, justCaptured = {} }) {
   const groups = [
-    ['광', captured.filter((c) => c.type === 'gwang')],
-    ['열끗', captured.filter((c) => c.type === 'yeol')],
-    ['띠', captured.filter((c) => c.type === 'tti')],
-    ['피', captured.filter((c) => c.type === 'pi')],
+    ['광', 'gwang', captured.filter((c) => c.type === 'gwang')],
+    ['열끗', 'yeol', captured.filter((c) => c.type === 'yeol')],
+    ['띠', 'tti', captured.filter((c) => c.type === 'tti')],
+    ['피', 'pi', captured.filter((c) => c.type === 'pi')],
   ];
   return (
     <div className="captured-row">
-      {groups.map(([label, cards]) => cards.length > 0 && (
+      {groups.map(([label, type, cards]) => cards.length > 0 && (
         <div key={label} className="captured-group">
-          <span className="captured-label">{label} {cards.length}</span>
+          <span className="captured-label">
+            {label} {cards.length}
+            {pileScore(type, captured) > 0 && <em className="pile-pts">{pileScore(type, captured)}점</em>}
+          </span>
           <div className="captured-cards">
             {cards.map((c) => (
               <span key={c.id} className={justCaptured[c.id] ? 'cap-pop' : ''}>
